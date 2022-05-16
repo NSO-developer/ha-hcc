@@ -1,0 +1,11 @@
+FROM alpine:3.15
+
+ARG NODE3_NAME
+
+RUN apk add --update --no-cache socat
+
+ADD ${NODE3_NAME}.tar.gz /
+
+WORKDIR /${NODE3_NAME}
+EXPOSE 12024
+CMD [ "sh", "./run.sh" ]
