@@ -65,9 +65,6 @@ Running the Example
      $ docker exec -it paris bash
      admin@paris:~/app$ ip address show dev eth0
      admin@paris:~/app$ arp -a
-     admin@paris:~/app$ gobgp global
-     admin@paris:~/app$ gobgp global rib
-     admin@paris:~/app$ gobgp neighbor
      admin@paris:~/app$ exit
 6. Examine the setup.sh -> Dockerfile -> app/run.sh -> app/Makefile ->
    gateway/run.sh files in that order.
@@ -78,7 +75,7 @@ Running the Example
 Implementation Details
 ~~~~~~~~~~~~~~~~~~~~~~
 This demo uses Docker containers to set up the Tail-f HCC NSO package in layer 2
-BGP mode with NSO and its dependencies as described in the NSO Administration
+mode with NSO and its dependencies as described in the NSO Administration
 Guide chapter "Tail-f HCC Package". The steps for the paris and london
 nodes described by the documentation are implemented by the setup.sh
 Dockerfile, and app/run.sh files.
