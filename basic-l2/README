@@ -5,6 +5,9 @@ This is an example implementation for demonstration purposes of the example
 setup described by the NSO Administration Guide chapter "Tail-f HCC Package"
 under "Tail-f HCC Usage".
 For details on the Tail-f HCC package, see the NSO Administration Guide.
+While this example use containers it is not intended as a guide to running 
+NSO in Docker. See "NSO in Docker for development and production" for
+guidance: https://gitlab.com/nso-developer/nso-docker
 
 Example Network Overview
 ~~~~~~~~~~~~~~~~~~~~~~~~
