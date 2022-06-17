@@ -79,7 +79,6 @@ EOF
     until ping -c1 -w3 ${NSO_VIP} >/dev/null 2>&1
     do
       printf "${RED}#### Waiting for the ${NSO_VIP} VIP route to be updated. Retry...\n${NC}"
-      sleep 1
     done
     set -e
 

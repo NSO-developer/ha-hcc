@@ -65,7 +65,6 @@ EOF
     until ping -c1 -w3 ${NSO_VIP} >/dev/null 2>&1
     do
       printf "${RED}#### Failed to ping the ${NSO_VIP} VIP. Retry...\n${NC}"
-      sleep 1
     done
     set -e
 
