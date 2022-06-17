@@ -38,15 +38,6 @@ all:
 	ncs-make-package --service-skeleton template --dest dummy-1.0 --build --no-test --root-container dummies dummy ; \
 	tar cvfz dummy-1.0.tar.gz dummy-1.0 ; \
 	rm -rf dummy-1.0 ; \
-	ncs-make-package --service-skeleton template --dest inert-1.0 --build --no-test --root-container inerts inert ; \
-	tar cvfz inert-1.0.tar.gz inert-1.0 ; \
-	rm -rf inert-1.0 ; \
-	ncs-make-package --service-skeleton template --dest dummy-1.1 --no-test --root-container dummies dummy ; \
-	sed -i.bak -e "s/1.0/1.1/g" dummy-1.1/package-meta-data.xml ; \
-	sed -i.bak -e "s%// replace with your own stuff here%leaf description {type string;}%g" dummy-1.1/src/yang/dummy.yang ; \
-	make -C dummy-1.1/src clean all ; \
-	tar cvfz dummy-1.1.tar.gz dummy-1.1 ; \
-	rm -rf dummy-1.1
 	sed -i.bak -e "s|<ncs-ipc-access-check>|<ncs-ipc-address><ip>0.0.0.0</ip></ncs-ipc-address><ncs-ipc-access-check>|" -e "s|<ha>.*</ha>||" -e "s|</ncs-config>|<ha><enabled>true</enabled><ip>0.0.0.0</ip></ha></ncs-config>|"  -e "s|</cli>|<style>c</style></cli>|" -e '/<ssh>/!b;n;c<enabled>true</enabled>' ${NCS_CONFIG_DIR}/ncs.conf ; \
 	$(call init_xml,${NODE1_NAME},${NODE1_IP},${NODE2_NAME},${NODE2_IP},${NSO_VIP}) > ${NCS_RUN_DIR}/cdb/init.xml ; \
 	cp package-store/dummy-1.0.tar.gz ${NCS_RUN_DIR}/packages ; \

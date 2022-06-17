@@ -1,0 +1,169 @@
+An NSO Tail-f HA HCC Layer-2 Deployment Example
+===============================================
+
+This is an example implementation for demonstration purposes of the setup
+described by the NSO Administration Guide chapter "NSO Deployment". For details
+on the demo, see the NSO Administration Guide.
+While this example use containers it is not intended as a guide to running
+NSO in Docker. See "NSO in Docker for development and production" for
+guidance: https://gitlab.com/nso-developer/nso-docker
+
+Example Network Overview
+~~~~~~~~~~~~~~~~~~~~~~~~
+manager: management station with CLI, RESTCONF, and SSH access to the london
+         and paris nodes.
+paris:   NSO, Tail-f HCC package (uses arping and iproute2 utils)
+london:  NSO, Tail-f HCC package (uses arping and iproute2 utils)
+
+
+  ----------  docker 0 default bridge  ----------
+                          |
+                          | .1
+  -----------  ParisLondonNet bridge  -----------
+        |                 |                |
+        |                 |                |
+                    192.168.23.0/16
+        |                 |                |
+        | .98             | .2             | .99
+   +----------+     +----------+     +----------+
+   | london   |     | manager  |     | paris    |
+   +----------+     +----------+     +----------+
+
+Prerequisites
+~~~~~~~~~~~~~
+- NSO_VERSION >= 5.8
+- nso-${NSO_VERSION}.linux.x86_64.installer.bin x 2, e.g. for NSO 5.8 and 5.8.1
+- ncs-${NSO_VERSION}-tailf-hcc-${TAILF_HCC_VERSION}.tar.gz x 2, e.g 5.8 and 5.8.1
+    Example:
+    $ pwd
+    /Users/tailf/upgrade-l2
+    $ ls -1 n*
+    ncs-5.8-tailf-hcc-5.0.3.tar.gz
+    ncs-5.8.1-tailf-hcc-5.0.3.tar.gz
+    nso-5.8.1.linux.x86_64.installer.bin
+    nso-5.8.linux.x86_64.installer.bin
+- Docker installed
+
+Running the Example
+~~~~~~~~~~~~~~~~~~~
+1. Add the NSO installation and Tail-f HCC packages into the directory of this
+   README. If necessary, change the version number NSO_VERSION and
+   TAILF_HCC_VERSION variables in the setup.sh file.
+2. Run the setup.sh script:
+    $ ./setup.sh # will follow the manager node output after setup
+   In another terminal:
+    $ docker ps # to make sure the paris, london, and manager containers are up
+3. Examine the manager node output:
+   The demo is divided into a CLI scripting part by the app/run.sh script and a
+   RESTCONF Python script part in app/run_rc.py. The two scripts will run the
+   same demo, and will execute the following steps on the paris and
+   london nodes:
+   a. Reset, setup, start node 1 & 2, and enable HA assuming start-up settings.
+      Initial VIP node is the paris node.
+   b. Add some dummy config to node 1, replicated to secondary node 2
+   c. Stop node 1 to make node 2 failover to primary role. VIP node becomes
+      the london node.
+   d. Start node 1 that will now assume secondary role
+   e. Role-revert the nodes back to start-up settings
+   f. Done! The paris node is again the VIP node.
+   g. Follow the developer log.
+4. Connect to the NSO CLI on the current primary node VIP through the
+   management station:
+    $ docker exec -it manager bash
+    root@manager:/manager$ ssh -l admin -p 2024 192.168.23.122 # Connect to
+     the primary NSO node CLI using the VIP address.
+    admin@ncs# show high-availability status
+    admin@ncs# exit
+5. Get the high-availability status using RESTCONF instead of CLI:
+    $ docker exec -it manager bash
+    # Get a RESTCONF token for authentication using the CLI:
+    root@manager$ ssh -l admin -p 2024 192.168.23.122
+    admin@nso-paris# generate_token
+    token N6jNpjth1FHyNNy0s/VeSNGSMlhQVN5cnINPwbtrAik=
+    admin@nso-paris# exit
+    # Now use curl as Python requests, as the run_rc.py script does, to get
+    # the HA status:
+    root@manager$ curl -kiv -H "X-Auth-Token: \
+    N6jNpjth1FHyNNy0s/VeSNGSMlhQVN5cnINPwbtrAik=" \
+    -H "Accept: application/yang-data+json" \
+    https://192.168.23.122:8888/restconf/data/\
+    tailf-ncs:high-availability/status
+    ...
+    {
+      "tailf-ncs:status": {
+        "mode": "master",
+        "current-id": "paris",
+        "assigned-role": "master",
+        "read-only-mode": false,
+        "connected-slave": [
+          {
+            "id": "london",
+            "address": "192.168.23.98"
+          }
+        ]
+      }
+    }
+    root@manager$ python3
+    >>> import requests
+    >>> requests.packages.urllib3.disable_warnings(\
+        requests.packages.urllib3.exceptions.InsecureRequestWarning)
+    >>> r = requests.get("https://192.168.23.122:8888/restconf/data/\
+        tailf-ncs:high-availability/status", \
+        headers={'Content-Type': 'application/yang-data+json', \
+        'X-Auth-Token': 'N6jNpjth1FHyNNy0s/VeSNGSMlhQVN5cnINPwbtrAik='}, \
+        verify=False)
+    >>> print(r.text)
+    {
+      "tailf-ncs:status": {
+        "mode": "master",
+        "current-id": "paris",
+        "assigned-role": "master",
+        "read-only-mode": false,
+        "connected-slave": [
+          {
+            "id": "london",
+            "address": "192.168.23.98"
+          }
+        ]
+      }
+    }
+6. Connect to the london and paris shell to examine the Linux
+   kernel route status.
+     $ docker exec -it paris bash
+     admin@paris:~/app$ ip address show dev eth0
+     admin@paris:~/app$ arp -a
+     admin@paris:~/app$ exit
+7. Examine the setup.sh -> Dockerfile -> app/run.sh -> app/Makefile ->
+   Dockerfile.manager -> app/run.sh .> app/run_rc.py files in that order.
+8. Cleanup
+     $ docker stop paris london manager
+     $ docker network rm ParisLondonNet
+
+Implementation Details
+~~~~~~~~~~~~~~~~~~~~~~
+This demo uses Docker containers to set up the Tail-f HCC NSO package in layer 2
+mode with NSO and its dependencies and perform an NSO version upgrade and
+package version upgradee as described in the NSO Administration Guide chapter
+"NSO Deployment". The steps for the paris and london nodes described by the
+documentation are implemented by the setup.sh, Dockerfile, app/run.sh,
+app/run_rc.py, and Makefile files.
+
+NSO is installed by and started in the context of an "admin" user that belongs
+to the "ncsadmin" user group. sudo is installed as the Tail-f HCC
+implementation requires sudo when running its "vipctl" script in a non-root
+context. Linux capabilities such as network admin are added to containers and
+specific commands to allow the running in the context of the admin user. See
+the "docker run" command in the setup.sh file and the Dockerfile for details.
+
+SSH to the paris and london nodes for shell and NSO CLI accces use SSH
+key-based authentication while RESTCONF use a token generated through the NSO
+CLI. Password authentication is not available for the paris and london nodes.
+
+Further Reading
+~~~~~~~~~~~~~~~
++ NSO Administrator Guide: NSO Deployment, NSO built-in HA, and Tail-f HCC
+  Package
++ examples.ncs/development-guide/high-availability examples
++ https://github.com/ThomasHabets/arping
++ https://wiki.linuxfoundation.org/networking/iproute2
++ https://docs.docker.com/engine/reference/run/

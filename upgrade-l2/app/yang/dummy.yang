@@ -1,0 +1,34 @@
+module dummy {
+  namespace "http://com/example/dummy";
+  prefix dummy;
+
+  import ietf-inet-types {
+    prefix inet;
+  }
+  import tailf-common {
+    prefix tailf;
+  }
+
+  rpc generate_token {
+    tailf:exec "/var/opt/ncs/scripts/gen_token.sh" {
+      tailf:args "$(user)";
+    }
+    output {
+      leaf token {
+        type string;
+      }
+    }
+  }
+  container dummies {
+    list dummy {
+      key "name";
+      leaf name {
+        type string;
+      }
+      // replace with your own stuff here
+      leaf dummy {
+        type inet:ipv4-address;
+      }
+    }
+  }
+}
