@@ -11,37 +11,56 @@ See the README file for more information
 import json
 import time
 import os
+import multiprocessing as mp
 from packaging import version
 import paramiko
 import requests
 
+
 def on_node(host, cmd):
     okblue = '\033[94m'
     endc = '\033[0m'
-    print(f"{okblue}On " + host + f":{endc} " + cmd + "\n")
+    print(f"{okblue}On " + host + f" CLI:{endc} " + cmd + "\n")
     ssh = paramiko.SSHClient()
     ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
     ssh.connect(host, port=2024, username="admin",
       key_filename=os.path.join(os.path.expanduser('~'), ".ssh", "id_ed25519"))
     stdin, stdout, stderr = ssh.exec_command(cmd)
     output = stdout.read().decode('utf-8')
+    err = stderr.read().decode('utf-8')
     ssh.close()
-    print(output)
+    print(output, err)
     return output
 
-def on_node_sh(host, cmd):
+
+def on_node_sh(host, username, cmd):
     okblue = '\033[94m'
     endc = '\033[0m'
     print(f"{okblue}On " + host + f":{endc} " + cmd + "\n")
     ssh = paramiko.SSHClient()
     ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-    ssh.connect(host, username="admin",
+    ssh.connect(host, username=username,
       key_filename=os.path.join(os.path.expanduser('~'), ".ssh", "id_ed25519"))
     stdin, stdout, stderr = ssh.exec_command(cmd)
     output = stdout.read().decode('utf-8')
+    err = stderr.read().decode('utf-8')
     ssh.close()
-    print(output)
+    print(output, err)
     return output
+
+
+def wait_alarm(node_path, node_key, q):
+    headers_stream = {'Content-Type': 'text/event-stream',
+                      'X-Auth-Token': node_key }
+
+    requests.packages.urllib3.disable_warnings(
+        requests.packages.urllib3.exceptions.InsecureRequestWarning)
+    r = requests.get(node_path, headers=headers_stream, stream=True, verify=False)
+    for alarms_str in r.iter_content(chunk_size=None, decode_unicode=True):
+        alarms_str = alarms_str.replace('data: ', '')
+        alarms = alarms_str.split("\n\n")
+        for alarm_str in alarms:
+            q.put(alarm_str)
 
 
 def ha_upgrade_demo():
@@ -66,27 +85,39 @@ def ha_upgrade_demo():
     print(f"\n{okblue}##### VIP address: " + nso_vip + f"\n{endc}")
 
     print(f"\n{okblue}##### Initialize the two nodes\n{endc}")
-    on_node_sh(node1_name, 'source $NCS_DIR/ncsrc; cd $APP_NAME;'
-               'make stop clean NSOVER=$NSO_VERSION HCCVER=$HCC_VERSION all;'
+    on_node_sh(node1_name, "root",
+               'rm -rf $NCS_ROOT_DIR/ncs-$NEW_NSO_VERSION')
+    on_node_sh(node1_name, "admin",
+               'rm $NCS_DIR;'
+               'ln -s $NCS_ROOT_DIR/ncs-$NSO_VERSION $NCS_DIR;'
+               'source $NCS_DIR/ncsrc;'
+               'cd /$APP_NAME;'
+               'make stop clean NODE_IP=$NODE_IP all;'
                'cp package-store/dummy-1.0.tar.gz $NCS_RUN_DIR/packages;'
                'cp package-store/token-1.0.tar.gz $NCS_RUN_DIR/packages;'
                'cp package-store/ncs-$NSO_VERSION-tailf-hcc-$HCC_VERSION.tar.gz'
                ' $NCS_RUN_DIR/packages; make start')
-    on_node_sh(node2_name, 'source $NCS_DIR/ncsrc; cd $APP_NAME;'
-               'make stop clean NSOVER=$NSO_VERSION HCCVER=$HCC_VERSION all;'
+    on_node_sh(node2_name, "root",
+               'rm -rf $NCS_ROOT_DIR/ncs-$NEW_NSO_VERSION;')
+    on_node_sh(node2_name, "admin",
+               'rm $NCS_DIR;'
+               'ln -s $NCS_ROOT_DIR/ncs-$NSO_VERSION $NCS_DIR;'
+               'source $NCS_DIR/ncsrc;'
+               'cd /$APP_NAME;'
+               'make stop clean NODE_IP=$NODE_IP all;'
                'cp package-store/dummy-1.0.tar.gz $NCS_RUN_DIR/packages;'
                'cp package-store/token-1.0.tar.gz $NCS_RUN_DIR/packages;'
                'cp package-store/ncs-$NSO_VERSION-tailf-hcc-$HCC_VERSION.tar.gz'
                ' $NCS_RUN_DIR/packages; make start')
 
     print(f"\n{okblue}##### Get a token for RESTCONF authentication\n{endc}")
-    node1_key = on_node(node1_name, "generate_token")
+    node1_key = on_node(node1_name, "generate-token")
     node1_key = node1_key.split(" ")[1].rstrip('\r\n')
 
     print(f"{okblue}##### The secondary " + node2_name + " node token is"
           " only used until overwriten by the primary " + node1_name +
           f" node token\n{endc}")
-    node2_key = on_node(node2_name, "generate_token")
+    node2_key = on_node(node2_name, "generate-token")
     node2_key = node2_key.split(" ")[1].rstrip('\r\n')
 
     requests.packages.urllib3.disable_warnings(
@@ -183,6 +214,23 @@ def ha_upgrade_demo():
     r = requests.get(node2_url + path, headers=headers, verify=False)
     print(r.text)
 
+    mp.set_start_method('spawn')
+    q = mp.Queue()
+    path = node1_url + '/streams/ncs-alarms/json'
+    alarm_process = mp.Process(target=wait_alarm, args=(path, node1_key, q))
+    alarm_process.start()
+
+    while True:
+        print(f"{header}#### Waiting for the RESTCONF notification process "
+              f"to connect to " + node1_name + f"..\n{endc}")
+        path = '/data/ietf-netconf-monitoring:netconf-state/sessions'
+        print(f"{bold}GET " + node1_url + path + f"{endc}")
+        r = requests.get(node1_url + path, headers=headers, verify=False)
+        print(r.text)
+        if r.text.count("rest-https") ==  2:
+            break
+        time.sleep(1)
+
     print(f"\n{okblue}##### Disable HA on the secondary node " + node2_name +
           " to simulate secondary node failure, primary " + node1_name +
           " will assume role none as all secondary nodes disconnected"
@@ -195,22 +243,15 @@ def ha_upgrade_demo():
     print("Status code: {}\n".format(r.status_code))
 
     while True:
-        path = '/data/tailf-ncs:high-availability/status/mode'
-        print(f"{bold}GET " + node1_url + path + f"{endc}")
-        r = requests.get(node1_url + path, headers=headers, verify=False)
-        print(r.text)
-        if "none" in r.text:
+        print(f"\n{header}##### Waiting for a ha-slave-down alarm to be"
+              f" generated...{endc}")
+        alarm_str = q.get()
+        print(f"{header}" + alarm_str + f"{endc}")
+        if "ha-slave-down" in alarm_str:
+            alarm_process.terminate()
             break
-        print(f"{header}#### Waiting for the primary node " + node1_name +
-              f" to assume none role...\n{endc}")
-        time.sleep(1)
 
     path = '/data/tailf-ncs:high-availability/status?content=nonconfig'
-    print(f"{bold}GET " + node1_url + path + f"{endc}")
-    r = requests.get(node1_url + path, headers=headers, verify=False)
-    print(r.text)
-
-    path = '/data/tailf-ncs-alarms:alarms?content=nonconfig'
     print(f"{bold}GET " + node1_url + path + f"{endc}")
     r = requests.get(node1_url + path, headers=headers, verify=False)
     print(r.text)
@@ -231,15 +272,15 @@ def ha_upgrade_demo():
         r = requests.get(vip_url + path, headers=headers, verify=False)
         if node2_name in r.text:
             break
-        print(f"{header}#### Waiting for the secondary node" + node2_name +
+        print(f"{header}#### Waiting for the secondary node " + node2_name +
               f" to re-connect...{endc}")
         time.sleep(1)
 
     print(f"\n{okblue}##### Disable HA on the primary " + node1_name +
-          "to make " + node2_name + f"failover to primary role\n{endc}")
+          " node to make " + node2_name + f" failover to primary role\n{endc}")
     path = '/operations/high-availability/disable'
-    print(f"{bold}POST " + vip_url + path + f"{endc}")
-    r = requests.post(vip_url + path, headers=headers, verify=False)
+    print(f"{bold}POST " + node1_url + path + f"{endc}")
+    r = requests.post(node1_url + path, headers=headers, verify=False)
     print("Status code: {}\n".format(r.status_code))
 
     while True:
@@ -391,46 +432,64 @@ def ha_upgrade_demo():
     print(f"\n{okgreen}##### Upgrade from NSO " + nso_version + " to " +
           new_nso_version + f"\n{endc}")
     print(f"\n{okblue}##### Backup before upgrading NSO\n{endc}")
-    on_node_sh(nso_vip, '$NCS_DIR/bin/ncs-backup')
-    on_node_sh(node2_name, '$NCS_DIR/bin/ncs-backup')
+    on_node_sh(nso_vip, "admin", '$NCS_DIR/bin/ncs-backup')
+    on_node_sh(node2_name, "admin", '$NCS_DIR/bin/ncs-backup')
 
-    print(f"\n{okblue}##### Install NSO " + new_nso_version +
+    print(f"{okblue}##### Install NSO " + new_nso_version +
           f" on both nodes\n{endc}")
-    on_node_sh(nso_vip, 'rm $NCS_DIR;'
-                  'ln -s $NCS_ROOT_DIR/ncs-$NEW_NSO_VERSION $NCS_DIR')
-    on_node_sh(node2_name, 'rm $NCS_DIR;'
-                           ' ln -s $NCS_ROOT_DIR/ncs-$NEW_NSO_VERSION $NCS_DIR')
+    on_node_sh(nso_vip, "root",
+               'chmod u+x /tmp/nso-$NEW_NSO_VERSION.linux.x86_64.installer.bin;'
+               '/tmp/nso-$NEW_NSO_VERSION.linux.x86_64.installer.bin'
+               ' --system-install --run-as-user admin --non-interactive;'
+               'chown admin:ncsadmin $NCS_ROOT_DIR;'
+               'chown root $NCS_ROOT_DIR/ncs-$NEW_NSO_VERSION/lib/ncs/lib/core/'
+               'confd/priv/cmdwrapper;'
+               'chmod u+s $NCS_ROOT_DIR/ncs-$NEW_NSO_VERSION/lib/ncs/lib/core/'
+               'confd/priv/cmdwrapper;'
+               'rm $NCS_DIR;'
+               'ln -s $NCS_ROOT_DIR/ncs-$NEW_NSO_VERSION $NCS_DIR')
+    on_node_sh(node2_name, "root",
+               'chmod u+x /tmp/nso-$NEW_NSO_VERSION.linux.x86_64.installer.bin;'
+               '/tmp/nso-$NEW_NSO_VERSION.linux.x86_64.installer.bin'
+               ' --system-install --run-as-user admin --non-interactive;'
+               'chown admin:ncsadmin $NCS_ROOT_DIR;'
+               'chown root $NCS_ROOT_DIR/ncs-$NEW_NSO_VERSION/lib/ncs/lib/core/'
+               'confd/priv/cmdwrapper;'
+               'chmod u+s $NCS_ROOT_DIR/ncs-$NEW_NSO_VERSION/lib/ncs/lib/core/'
+               'confd/priv/cmdwrapper;'
+               'rm $NCS_DIR;'
+               'ln -s $NCS_ROOT_DIR/ncs-$NEW_NSO_VERSION $NCS_DIR')
 
     # NSO 5.5 removed the show-log-directory parameter.
     if version.parse(nso_version) < version.parse("5.5") and \
        version.parse(new_nso_version) >= version.parse("5.5"):
-        on_node_sh(nso_vip, 'sed -i.bak "s%<show-log-directory>./logs'
+        on_node_sh(nso_vip, "admin", 'sed -i.bak "s%<show-log-directory>./logs'
                       '</show-log-directory>%%" $NCS_CONFIG_DIR/ncs.conf')
-        on_node_sh(node2_name, 'sed -i.bak "s%<show-log-directory>./logs'
+        on_node_sh(node2_name, "admin", 'sed -i.bak "s%<show-log-directory>./logs'
                                '</show-log-directory>%%"'
                                ' $NCS_CONFIG_DIR/ncs.conf')
 
     # NSO 5.6 removed the large-scale parameters
     if version.parse(nso_version) < version.parse("5.6") and \
        version.parse(new_nso_version) >= version.parse("5.6"):
-       on_node_sh(nso_vip, 'sed -i.bak "/<large-scale>/I,+7 d"'
+       on_node_sh(nso_vip, "admin", 'sed -i.bak "/<large-scale>/I,+7 d"'
                      ' $NCS_CONFIG_DIR/ncs.conf')
-       on_node_sh(node2_name, 'sed -i.bak "/<large-scale>/I,+7 d"'
+       on_node_sh(node2_name, "admin", 'sed -i.bak "/<large-scale>/I,+7 d"'
                                 ' $NCS_CONFIG_DIR/ncs.conf')
 
     print(f"\n{okblue}##### Rebuild the primary " + node1_name +
           " node packages in its package store for NSO " + new_nso_version +
           f"\n{endc}")
-    on_node_sh(nso_vip, 'source $NCS_DIR/ncsrc; cd $APP_NAME; make'
-                       ' rebuild-packages')
+    on_node_sh(nso_vip, "admin", 'cd /$APP_NAME;'
+                        'make rebuild-packages')
 
     print(f"\n{okblue}##### Replace the currently installed packages on the " +
           node1_name + " node with the ones built for NSO"  + new_nso_version +
           f"{endc}\n")
-    on_node_sh(nso_vip, 'rm $NCS_RUN_DIR/packages/*;'
-       'cp $APP_NAME/package-store/dummy-1.0.tar.gz $NCS_RUN_DIR/packages;'
-       'cp $APP_NAME/package-store/token-1.0.tar.gz $NCS_RUN_DIR/packages;'
-       'cp $APP_NAME/package-store/ncs-$NEW_NSO_VERSION-tailf-hcc-'
+    on_node_sh(nso_vip, "admin", 'rm $NCS_RUN_DIR/packages/*;'
+       'cp /$APP_NAME/package-store/dummy-1.0.tar.gz $NCS_RUN_DIR/packages;'
+       'cp /$APP_NAME/package-store/token-1.0.tar.gz $NCS_RUN_DIR/packages;'
+       'cp /$APP_NAME/package-store/ncs-$NEW_NSO_VERSION-tailf-hcc-'
        '$NEW_HCC_VERSION.tar.gz $NCS_RUN_DIR/packages')
 
     print(f"\n{okblue}##### Disable primary node " + node1_name +
@@ -438,15 +497,15 @@ def ha_upgrade_demo():
           " to automatically failover and assume primary role"
           f" in read-only mode{endc}\n")
     path = '/operations/high-availability/disable'
-    print(f"{bold}POST " + vip_url + path + f"{endc}")
-    r = requests.post(vip_url + path, headers=headers, verify=False)
+    print(f"{bold}POST " + node1_url + path + f"{endc}")
+    r = requests.post(node1_url + path, headers=headers, verify=False)
     print("Status code: {}\n".format(r.status_code))
 
     print(f"\n{okblue}##### Upgrade the " + node1_name + " node to " +
           new_nso_version + f"\n{endc}")
-    on_node_sh(node1_name, '$NCS_DIR/bin/ncs --stop; $NCS_DIR/bin/ncs -c'
+    on_node_sh(node1_name, "admin", '$NCS_DIR/bin/ncs --stop; $NCS_DIR/bin/ncs -c'
                            ' $NCS_CONFIG_DIR/ncs.conf'
-                           ' --with-package-reload-force')
+                           ' --with-package-reload')
 
     print(f"\n{okblue}##### Disable high availability for the " + node2_name +
            f" node\n{endc}")
@@ -472,23 +531,24 @@ def ha_upgrade_demo():
     print(f"\n{okblue}##### Rebuild the secondary " + node2_name +
           " node packages in its package store for NSO " + new_nso_version +
           f"\n{endc}")
-    on_node_sh(node2_name,
-               'source $NCS_DIR/ncsrc; cd $APP_NAME; make rebuild-packages')
+    on_node_sh(node2_name, "admin", 'source $NCS_DIR/ncsrc;'
+                          'cd /$APP_NAME;'
+                          'make rebuild-packages')
 
     print(f"\n{okblue}##### Replace the currently installed packages on the " +
           node2_name + " node with the ones built for NSO " + new_nso_version +
           f"{endc}\n")
-    on_node_sh(node2_name, 'rm $NCS_RUN_DIR/packages/*;'
-           'cp $APP_NAME/package-store/dummy-1.0.tar.gz $NCS_RUN_DIR/packages;'
-           'cp $APP_NAME/package-store/token-1.0.tar.gz $NCS_RUN_DIR/packages;'
-           'cp $APP_NAME/package-store/ncs-$NEW_NSO_VERSION-tailf-hcc-'
+    on_node_sh(node2_name, "admin", 'rm $NCS_RUN_DIR/packages/*;'
+           'cp /$APP_NAME/package-store/dummy-1.0.tar.gz $NCS_RUN_DIR/packages;'
+           'cp /$APP_NAME/package-store/token-1.0.tar.gz $NCS_RUN_DIR/packages;'
+           'cp /$APP_NAME/package-store/ncs-$NEW_NSO_VERSION-tailf-hcc-'
            '$NEW_HCC_VERSION.tar.gz $NCS_RUN_DIR/packages')
 
     print(f"\n{okblue}##### Upgrade the " + node2_name + " node to " +
           new_nso_version + f"\n{endc}")
-    on_node_sh(node2_name, '$NCS_DIR/bin/ncs --stop; $NCS_DIR/bin/ncs -c'
+    on_node_sh(node2_name, "admin", '$NCS_DIR/bin/ncs --stop; $NCS_DIR/bin/ncs -c'
                            ' $NCS_CONFIG_DIR/ncs.conf'
-                           ' --with-package-reload-force')
+                           ' --with-package-reload')
 
     while True:
         path = '/data/tailf-ncs:high-availability/status/mode'

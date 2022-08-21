@@ -9,7 +9,7 @@ module dummy {
     prefix tailf;
   }
 
-  rpc generate_token {
+  rpc generate-token {
     tailf:exec "/var/opt/ncs/scripts/gen_token.sh" {
       tailf:args "$(user)";
     }
