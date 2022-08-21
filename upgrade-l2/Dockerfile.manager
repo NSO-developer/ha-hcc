@@ -1,18 +1,26 @@
 FROM debian:11-slim
 
 ARG NODE3_NAME
+ARG APP_NAME
+ARG NEW_NSO_VERSION
+ARG NEW_HCC_VERSION
 
+ENV APP_NAME=${APP_NAME}
+ENV NEW_NSO_VERSION=${NEW_NSO_VERSION}
+ENV NEW_HCC_VERSION=${NEW_HCC_VERSION}
+
+COPY nso-${NEW_NSO_VERSION}.linux.x86_64.installer.bin /tmp/
+COPY ncs-${NEW_NSO_VERSION}-tailf-hcc-${NEW_HCC_VERSION}.tar.gz /tmp/
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends socat \
+    && apt-get install -y --no-install-recommends socat net-tools \
     openssh-client python3 python3-pip python3-setuptools iputils-ping nano \
+    curl iproute2 \
     && python3 -m pip install --upgrade pip \
     && python3 -m pip install --no-cache-dir paramiko requests packaging
 
 ADD ${NODE3_NAME}.tar.gz /
 WORKDIR /root
-RUN tar xvfz /${NODE3_NAME}/ssh-keys.tar.gz \
-    && rm /${NODE3_NAME}/ssh-keys.tar.gz
 
 WORKDIR /${NODE3_NAME}
-EXPOSE 12024
+EXPOSE 18888
 CMD [ "./run.sh" ]
