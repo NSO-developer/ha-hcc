@@ -123,9 +123,10 @@ Dockerfile, app/run.sh, and router/run.sh files.
 - The NSO is installed by and started in the context of an "admin" user that
   belongs to the "ncsadmin" user group. sudo is installed as the Tail-f HCC
   implementation requires sudo when running its "vipctl" script in a non-root
-  context. Linux capabilities such as network admin are added to containers and
-  specific commands to allow the running in the context of the admin user. See
-  the "docker run" command in the setup.sh file and the Dockerfile for details.
+  context and sudo is needed for the "ip" command. Linux capabilities such as
+  network admin are added to containers and specific commands to allow the
+  running in the context of the admin user. See the "docker run" command in
+  the setup.sh file and the Dockerfile for details.
 
 Further Reading
 ~~~~~~~~~~~~~~~
