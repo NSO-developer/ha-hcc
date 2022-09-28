@@ -30,8 +30,8 @@ RUN mkdir -p /usr/share/man/man1 \
     && chmod +x /tmp/nso-${NSO_VERSION}.linux.x86_64.installer.bin \
     && /tmp/nso-${NSO_VERSION}.linux.x86_64.installer.bin --system-install \
        --run-as-user admin --non-interactive \
-    && setcap CAP_NET_ADMIN=+eip /bin/ip \
-    && setcap CAP_NET_RAW=+eip /usr/sbin/arping \
+    && setcap CAP_NET_ADMIN=+ep /bin/ip \
+    && setcap CAP_NET_RAW=+ep /usr/sbin/arping \
     && echo "admin ALL = (root) NOPASSWD: /var/opt/ncs/state/packages-in-use/1/tailf-hcc/priv/vipctl" >> /etc/sudoers \
     && apt-get autoremove -y \
     && apt-get clean
