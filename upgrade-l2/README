@@ -52,6 +52,9 @@ Running the Example
 1. Add the NSO installation and Tail-f HCC packages into the directory of this
    README. Change the version number NSO_VERSION and TAILF_HCC_VERSION
    variables in the setup.sh file.
+   Select the Debian or the RedHat Universal Base Image (UBI) Linux
+   distribution for the paris and london nodes. The default is Debian. Change
+   the PARIS_LONDON_DOCKERFILE variable in the setup.sh file to use RedHat.
 2. Run the setup.sh script:
     $ ./setup.sh # will follow the manager node output after setup
    In another terminal window:

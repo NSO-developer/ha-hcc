@@ -33,8 +33,12 @@ chmod 640 /home/admin/.ssh/id_ed25519.pub
 chmod 640 /home/admin/.ssh/id_ed25519
 chown -Rh admin:ncsadmin /home/admin/.ssh
 
+env /bin/bash -o posix -c 'export -p' >> /root/.bash_profile
+env /bin/bash -o posix -c 'export -p' >> /home/admin/.bash_profile
 env | grep _ >> /root/.pam_environment
 env | grep _ >> /home/admin/.pam_environment
+env | grep _ >> /root/.ssh/environment
+env | grep _ >> /home/admin/.ssh/environment
 
 printf "\n${PURPLE}##### Start the SSH daemon\n${NC}"
 /usr/sbin/sshd
