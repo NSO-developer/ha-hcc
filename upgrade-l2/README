@@ -35,15 +35,15 @@ london:  NSO, Tail-f HCC package (uses arping and iproute2 utils)
 Prerequisites
 ~~~~~~~~~~~~~
 - NSO_VERSION >= 5.8
-- nso-${NSO_VERSION}.linux.x86_64.installer.bin x 2, e.g. for NSO 5.8 and 5.8.1
-- ncs-${NSO_VERSION}-tailf-hcc-${TAILF_HCC_VERSION}.tar.gz x 2, e.g 5.8 and 5.8.1
+- nso-${NSO_VERSION}.linux.x86_64.installer.bin x 2, e.g. for NSO 5.8 and 5.8.3
+- ncs-${NSO_VERSION}-tailf-hcc-${TAILF_HCC_VERSION}.tar.gz x 2, e.g 5.8 and 5.8.3
     Example:
     $ pwd
     /Users/tailf/upgrade-l2
     $ ls -1 n*
     ncs-5.8-tailf-hcc-5.0.3.tar.gz
-    ncs-5.8.1-tailf-hcc-5.0.3.tar.gz
-    nso-5.8.1.linux.x86_64.installer.bin
+    ncs-5.8.3-tailf-hcc-5.0.3.tar.gz
+    nso-5.8.3.linux.x86_64.installer.bin
     nso-5.8.linux.x86_64.installer.bin
 - Docker installed
 
