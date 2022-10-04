@@ -114,18 +114,10 @@ def ha_upgrade_demo():
     node1_key = on_node(node1_name, "generate-token")
     node1_key = node1_key.split(" ")[1].rstrip('\r\n')
 
-    print(f"{okblue}##### The secondary " + node2_name + " node token is"
-          " only used until overwriten by the primary " + node1_name +
-          f" node token\n{endc}")
-    node2_key = on_node(node2_name, "generate-token")
-    node2_key = node2_key.split(" ")[1].rstrip('\r\n')
-
     requests.packages.urllib3.disable_warnings(
         requests.packages.urllib3.exceptions.InsecureRequestWarning)
     headers = {'Content-Type': 'application/yang-data+json',
                      'X-Auth-Token': node1_key }
-    headers_node2 = {'Content-Type': 'application/yang-data+json',
-                     'X-Auth-Token': node2_key }
 
     print(f"{okblue}##### Enable HA\n{endc}")
     path = '/operations/high-availability/enable'
@@ -133,10 +125,11 @@ def ha_upgrade_demo():
     r = requests.post(node1_url + path, headers=headers, verify=False)
     print("Status code: {}\n".format(r.status_code))
 
-    path = '/operations/high-availability/enable'
-    print(f"{bold}POST " + node2_url + path + f"{endc}")
-    r = requests.post(node2_url + path, headers=headers_node2, verify=False)
-    print("Status code: {}\n".format(r.status_code))
+    print(f"{okblue}##### The secondary " + node2_name + " node token has"
+          " not yet been writen by the primary " + node1_name +
+          " node, so we use the CLI to enable HA on the " + node2_name +
+          f" node\n{endc}")
+    on_node(node2_name, "high-availability enable")
 
     while True:
         path = '/data/tailf-ncs:high-availability/status/current-id'
