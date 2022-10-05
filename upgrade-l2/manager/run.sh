@@ -25,6 +25,9 @@ function version_ge() { test "$(printf '%s\n' "$@" | sort -rV | head -n 1)" == "
 NSO55=5.5
 NSO56=5.6
 
+printf "\n${PURPLE}##### Start the rsyslog daemon and setup SSH\n${NC}"
+/usr/sbin/rsyslogd
+
 mkdir /root/.ssh
 ssh-keygen -N "" -t ed25519 -m pem -f /root/.ssh/id_ed25519
 chmod 600 /root/.ssh/id_ed25519.pub

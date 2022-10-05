@@ -23,8 +23,7 @@ COPY nso-${NSO_VERSION}.linux.x86_64.installer.bin /tmp
 
 RUN apt-get update \
     && apt-get install -y --no-install-recommends default-jre python3 \
-       make openssh-server \
-       gawk iproute2 arping sudo net-tools nano \
+       make openssh-server gawk iproute2 arping sudo net-tools rsyslog \
     && groupadd ncsadmin \
     && groupadd ncsoper \
     && useradd --create-home --home-dir /home/admin --no-user-group \
@@ -48,8 +47,14 @@ RUN apt-get update \
                   -e "s/#PubkeyAuthentication yes/PubkeyAcceptedKeyTypes ssh-ed25519/" \
                   -e "s/#PermitUserEnvironment no/PermitUserEnvironment yes/" \
                   -e "s/PermitUserEnvironment no/PermitUserEnvironment yes/" \
+                  -e "s|HostKey /etc/ssh/ssh_host_rsa_key|#HostKey /etc/ssh/ssh_host_rsa_key|" \
+                  -e "s|HostKey /etc/ssh/ssh_host_ecdsa_key|#HostKey /etc/ssh/ssh_host_ecdsa_key|" \
                   /etc/ssh/sshd_config \
     && echo "DenyUsers oper" >> /etc/ssh/sshd_config \
+    && sed -i.bak -e 's/SysSock.Use="off"/SysSock.Use="on"/' \
+                  -e 's/daemon.*/daemon.info @@manager/' \
+                     /etc/rsyslog.conf \
+    && echo 'daemon.*			-/var/log/daemon.log' >> /etc/rsyslog.conf \
     && apt-get autoremove -y \
     && apt-get clean
 

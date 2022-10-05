@@ -21,7 +21,7 @@ ENV PATH=/opt/ncs/current/bin:/opt/ncs/current/lib/ncs/bin:$PATH
 COPY nso-${NSO_VERSION}.linux.x86_64.installer.bin /tmp
 
 RUN yum install -y python3 java-17-openjdk-devel make openssl openssh-server \
-    openssh-clients net-tools iproute iputils sudo \
+    openssh-clients net-tools iproute iputils sudo rsyslog \
     && ln -s /usr/bin/python3 /usr/bin/python \
     && groupadd ncsadmin \
     && groupadd ncsoper \
@@ -46,8 +46,14 @@ RUN yum install -y python3 java-17-openjdk-devel make openssl openssh-server \
                   -e "s/#PubkeyAuthentication yes/PubkeyAcceptedKeyTypes ssh-ed25519/" \
                   -e "s/#PermitUserEnvironment no/PermitUserEnvironment yes/" \
                   -e "s/PermitUserEnvironment no/PermitUserEnvironment yes/" \
+                  -e "s|HostKey /etc/ssh/ssh_host_rsa_key|#HostKey /etc/ssh/ssh_host_rsa_key|" \
+                  -e "s|HostKey /etc/ssh/ssh_host_ecdsa_key|#HostKey /etc/ssh/ssh_host_ecdsa_key|" \
                   /etc/ssh/sshd_config \
-    && echo "DenyUsers oper" >> /etc/ssh/sshd_config
+    && echo "DenyUsers oper" >> /etc/ssh/sshd_config \
+    && sed -i.bak -e 's/SysSock.Use="off"/SysSock.Use="on"/' \
+                     /etc/rsyslog.conf \
+    && echo 'daemon.info		@@manager' >> /etc/rsyslog.conf \
+    && echo 'daemon.*			-/var/log/daemon.log' >> /etc/rsyslog.conf
 
 ADD ${APP_NAME}.tar.gz /
 WORKDIR /${APP_NAME}

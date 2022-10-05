@@ -68,12 +68,34 @@ all: packages
 </ncs-config>|"  \
 							-e 's|</cli>|\ \ <style>c</style>\
 \ \ </cli>|' \
+							-e 's|</developer-log>|\ \ <syslog>\
+\ \ \ \ \ \ \ \ <enabled>true</enabled>\
+\ \ \ \ \ \ </syslog>\
+\ \ \ \ </developer-log>|' \
+							-e 's|</audit-log>|\ \ <syslog>\
+\ \ \ \ \ \ \ \ <enabled>true</enabled>\
+\ \ \ \ \ \ </syslog>\
+\ \ \ \ </audit-log>|' \
+							-e 's|</netconf-log>|\ \ <syslog>\
+\ \ \ \ \ \ \ \ <enabled>true</enabled>\
+\ \ \ \ \ \ </syslog>\
+\ \ \ \ </netconf-log>|' \
+							-e 's|</snmp-log>|\ \ <syslog>\
+\ \ \ \ \ \ \ \ <enabled>true</enabled>\
+\ \ \ \ \ \ </syslog>\
+\ \ \ \ </snmp-log>|' \
+							-e 's|</webui-access-log>|\ \ <syslog>\
+\ \ \ \ \ \ \ \ <enabled>true</enabled>\
+\ \ \ \ \ \ </syslog>\
+\ \ \ \ </webui-access-log>|' \
 							-e 's|@ncs|@nso-\\\H|g' \
 							-e '/<ssh>/!b;n;c<enabled>true</enabled>' \
 							${NCS_CONFIG_DIR}/ncs.conf ; \
 	sed -i.bak -e '/<ssl>/!b;n;c<enabled>true</enabled>' \
 						 ${NCS_CONFIG_DIR}/ncs.conf ; \
 	sed -i.bak -e '/<cgi>/!b;n;c<enabled>false</enabled>' \
+						 ${NCS_CONFIG_DIR}/ncs.conf ; \
+	sed -i.bak -e '/log<\/name>/!b;n;c<enabled>false</enabled>' \
 						 ${NCS_CONFIG_DIR}/ncs.conf ; \
 	sed -i.orig '/<group>ncsoper<\/group>/a\
 \ \ \ \ \ \ <rule>\
