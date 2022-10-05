@@ -66,4 +66,4 @@ runuser -m -u admin -g ncsadmin -- make start
 
 ncs_cmd -u admin -g ncsadmin -o -c 'maction "/high-availability/enable"'
 
-tail -F ${NCS_LOG_DIR}/devel.log
+tail -F /var/log/daemon.log
