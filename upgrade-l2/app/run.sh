@@ -40,8 +40,9 @@ env | grep _ >> /home/admin/.pam_environment
 env | grep _ >> /root/.ssh/environment
 env | grep _ >> /home/admin/.ssh/environment
 
-printf "\n${PURPLE}##### Start the SSH daemon\n${NC}"
+printf "\n${PURPLE}##### Start the SSH and rsyslog daemons\n${NC}"
 /usr/sbin/sshd
+/usr/sbin/rsyslogd
 
 NODE_NAME=$(uname -n)
 

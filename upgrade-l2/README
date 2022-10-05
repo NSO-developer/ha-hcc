@@ -54,7 +54,7 @@ Running the Example
    variables in the setup.sh file.
    Select the Debian or the RedHat Universal Base Image (UBI) Linux
    distribution for the paris and london nodes. The default is Debian. Change
-   the PARIS_LONDON_DOCKERFILE variable in the setup.sh file to use RedHat.
+   the NODE12_DOCKERFILE variable in the setup.sh file to use RedHat.
 2. Run the setup.sh script:
     $ ./setup.sh # will follow the manager node output after setup
    In another terminal window:
@@ -64,8 +64,8 @@ Running the Example
    RESTCONF Python script part in app/run_rc.py. The two scripts will run the
    same demo and will execute the following steps on the paris and
    london nodes:
-   a. Reset, set up, start the paris and london nodes, and enable HA assuming
-      start-up settings. The initial VIP node is the paris node.
+   a. Reset, set up, start the SSH, rsyslog, and NSO daemons on the paris and
+      london nodes, and enable HA assuming start-up settings. The initial VIP node is the paris node.
    b. Add some dummy config to the paris node, replicated to secondary node 2.
    c. Disable HA on the secondary node london to simulate secondary node
       failure, primary paris will assume role none as all secondary nodes
@@ -193,6 +193,14 @@ key-based authentication/login, while RESTCONF uses token validation for
 authentication. Tokens are retrieved through the NSO CLI that uses a
 shell script to generate a token. Password authentication has been disabled for
 the paris and london nodes.
+
+On the paris and london nodes, the NSO ncs, developer, audit, netconf, snmp,
+and webui-access logs are configured in $NCS_CONFIG_DIR/ncs.conf to go to a
+local syslog with the daemon facility managed by rsyslogd.
+rsyslogd pass the logs to a local /var/log/daemon.log and send logs with log
+level info or higher over TCP to the manager node's joint /var/log/daemon.log.
+See the rsyslogd config file under /etc/rsyslogd.conf for details on the
+rsyslogd setup on the paris+london and manager nodes.
 
 Further Reading
 ~~~~~~~~~~~~~~~

@@ -12,7 +12,7 @@ NODE2_IP="192.168.23.98"
 NODE3_NAME="manager"
 NODE3_IP="192.168.23.2"
 NCS_CONFIG_DIR=/etc/ncs
-PARIS_LONDON_DOCKERFILE="Dockerfile.deb"
+NODE12_DOCKERFILE="Dockerfile.deb" # Alt. "Dockerfile.rhubi"
 
 IMG1_NAME=$NODE1_NAME"-tailf-hcc"
 IMG2_NAME=$NODE2_NAME"-tailf-hcc"
@@ -107,8 +107,8 @@ else
     docker network rm $NET1_NAME
 fi
 
-docker build -t $IMG1_NAME --build-arg NSO_VERSION=$NSO_VERSION --build-arg HCC_VERSION=$HCC_VERSION --build-arg APP_NAME=$APP_NAME --build-arg NODE3_NAME=$NODE3_NAME --build-arg NCS_CONFIG_DIR=$NCS_CONFIG_DIR -f $PARIS_LONDON_DOCKERFILE .
-docker build -t $IMG2_NAME --build-arg NSO_VERSION=$NSO_VERSION --build-arg HCC_VERSION=$HCC_VERSION --build-arg APP_NAME=$APP_NAME --build-arg NODE3_NAME=$NODE3_NAME --build-arg NCS_CONFIG_DIR=$NCS_CONFIG_DIR -f $PARIS_LONDON_DOCKERFILE .
+docker build -t $IMG1_NAME --build-arg NSO_VERSION=$NSO_VERSION --build-arg HCC_VERSION=$HCC_VERSION --build-arg APP_NAME=$APP_NAME --build-arg NODE3_NAME=$NODE3_NAME --build-arg NCS_CONFIG_DIR=$NCS_CONFIG_DIR -f $NODE12_DOCKERFILE .
+docker build -t $IMG2_NAME --build-arg NSO_VERSION=$NSO_VERSION --build-arg HCC_VERSION=$HCC_VERSION --build-arg APP_NAME=$APP_NAME --build-arg NODE3_NAME=$NODE3_NAME --build-arg NCS_CONFIG_DIR=$NCS_CONFIG_DIR -f $NODE12_DOCKERFILE .
 docker build -t $IMG3_NAME --build-arg NEW_NSO_VERSION=$NEW_NSO_VERSION --build-arg NEW_HCC_VERSION=$NEW_HCC_VERSION --build-arg APP_NAME=$APP_NAME --build-arg NODE3_NAME=$NODE3_NAME -f Dockerfile.$NODE3_NAME .
 
 docker network create --subnet=$SUBNET1 $NET1_NAME
