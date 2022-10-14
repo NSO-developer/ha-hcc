@@ -9,6 +9,19 @@ PURPLE='\033[0;35m'
 NC='\033[0m' # No Color
 
 NODE_NAME=$(uname -n)
+
+function version_ge() { test "$(printf '%s\n' "$@" | sort -rV | head -n 1)" == "$1"; }
+NSO60=6.0
+
+# NSO 6 use primary secondary instead of master slave
+if version_ge ${NSO_VERSION} $NSO60; then
+  PRIMARY="primary"
+  SECONDARY="secondary"
+else
+  PRIMARY="master"
+  SECONDARY="slave"
+fi
+
 printf "${PURPLE}NODE_NAME: $NODE_NAME\n${NC}"
 printf "${PURPLE}NODE1: ${NODE1_NAME} NODE1_IP: ${NODE1_IP}\n${NC}"
 printf "${PURPLE}NODE2: ${NODE2_NAME} NODE2_IP: ${NODE2_IP}\n${NC}"
@@ -16,11 +29,11 @@ printf "${PURPLE}NSO_VIP: ${NSO_VIP}\n${NC}"
 
 printf "\n${PURPLE}##### Reset, setup, start, and enable HA assuming start-up settings\n${NC}"
 make stop &> /dev/null
-make clean NODE1_IP=${NODE1_IP} NODE2_IP=${NODE2_IP} all start
+make clean NODE1_IP=${NODE1_IP} NODE2_IP=${NODE2_IP} PRIMARY=$PRIMARY SECONDARY=$SECONDARY all start
 ncs_cmd -u admin -g ncsadmin -o -c 'maction "/high-availability/enable"'
 
 if [ "${NODE_NAME}" = ${NODE1_NAME} ] ; then
-    while [[ $(ncs_cmd -u admin -g ncsadmin -a ${NODE1_IP} -c 'mrtrans; maapi_num_instances "/high-availability/status/connected-slave"') != "1" ]] ; do
+    while [[ $(ncs_cmd -u admin -g ncsadmin -a ${NODE1_IP} -c "mrtrans; maapi_num_instances /high-availability/status/connected-$SECONDARY") != "1" ]] ; do
         printf '.'
         sleep 1
     done
@@ -53,7 +66,7 @@ EOF
     RI=$(ncs_cmd -u admin -g ncsadmin -a ${NODE2_IP} -c 'mrtrans; maapi_get "/high-availability/settings/reconnect-interval"')
     RA=$(ncs_cmd -u admin -g ncsadmin -a ${NODE2_IP} -c 'mrtrans; maapi_get "/high-availability/settings/reconnect-attempts"')
     ID=$((RI*RA))
-    while [[ $(ncs_cmd -u admin -g ncsadmin -a ${NODE2_IP} -o -c 'mrtrans; maapi_get "/high-availability/status/mode"') != "master" ]]; do
+    while [[ $(ncs_cmd -u admin -g ncsadmin -a ${NODE2_IP} -o -c 'mrtrans; maapi_get "/high-availability/status/mode"') != "$PRIMARY" ]]; do
         printf "${RED}#### Waiting for node 2 to fail reconnect to node 1 and assume primary role... $ID\n${NC}"
         if [[ $ID > 0 ]]; then
             let ID--
@@ -80,7 +93,7 @@ EOF
     make start
 
     printf "\n\n"
-    while [[ $(ncs_cmd -u admin -g ncsadmin -a ${NODE1_IP} -o -c 'mrtrans; maapi_get "/high-availability/status/mode"') != "slave" ]]; do
+    while [[ $(ncs_cmd -u admin -g ncsadmin -a ${NODE1_IP} -o -c 'mrtrans; maapi_get "/high-availability/status/mode"') != "$SECONDARY" ]]; do
         printf "${RED}#### Waiting for node 1 to become secondary to node 2...\n${NC}"
         sleep 1
     done
@@ -108,7 +121,7 @@ high-availability enable
 EOF
 
     printf "\n\n"
-    while [[ $(ncs_cmd -u admin -g ncsadmin -a ${NODE1_IP} -o -c 'mrtrans; maapi_get "/high-availability/status/mode"') != "master" ]]; do
+    while [[ $(ncs_cmd -u admin -g ncsadmin -a ${NODE1_IP} -o -c 'mrtrans; maapi_get "/high-availability/status/mode"') != "$PRIMARY" ]]; do
         printf "${RED}#### Waiting for node 1 to revert to primary role...\n${NC}"
         sleep 1
     done
@@ -118,7 +131,7 @@ high-availability enable
 EOF
 
     printf "\n\n"
-    while [[ $(ncs_cmd -u admin -g ncsadmin -a ${NODE2_IP} -o -c 'mrtrans; maapi_get "/high-availability/status/mode"') != "slave" ]]; do
+    while [[ $(ncs_cmd -u admin -g ncsadmin -a ${NODE2_IP} -o -c 'mrtrans; maapi_get "/high-availability/status/mode"') != "$SECONDARY" ]]; do
         printf "${RED}#### Waiting for node 2 to revert to secondary role for primary node 1...\n${NC}"
         sleep 1
     done

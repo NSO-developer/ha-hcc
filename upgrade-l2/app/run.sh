@@ -7,8 +7,21 @@ GREEN='\033[0;32m'
 PURPLE='\033[0;35m'
 NC='\033[0m' # No Color
 
-openssl rand -base64 32 > /root/ha_token
-chmod 600 /root/ha_token
+function version_ge() { test "$(printf '%s\n' "$@" | sort -rV | head -n 1)" == "$1"; }
+NSO60=6.0
+
+# NSO 6 use primary secondary instead of master slave
+if version_ge ${NSO_VERSION} $NSO60; then
+  PRIMARY="primary"
+  SECONDARY="secondary"
+else
+  PRIMARY="master"
+  SECONDARY="slave"
+fi
+
+openssl rand -base64 32 > /home/admin/ha_token
+chmod 600 /home/admin/ha_token
+chown admin:ncsadmin /home/admin/ha_token
 
 ssh-keygen -N "" -t ed25519 -m pem -f /etc/ssh/ssh_host_ed25519_key
 chmod 600 /etc/ssh/ssh_host_ed25519_key.pub
@@ -51,15 +64,13 @@ while [[ ( $(wc -l /home/admin/.ssh/authorized_keys) < 1 ) ]]; do
   sleep 1
 done
 
-HA_TOKEN=$(head -n 1 /root/ha_token)
-
 printf "\n${PURPLE}##### Apply a temporary privilege issue fix to the Tail-f HCC package\n${NC}"
 make HCC_TARBALL_NAME="ncs-${NSO_VERSION}-tailf-hcc-${HCC_VERSION}.tar.gz" hcc-fix
 
 printf "\n${PURPLE}##### Reset, setup, start NSO, and enable HA assuming start-up settings\n${NC}"
 make stop &> /dev/null
 make clean
-runuser -m -u admin -g ncsadmin -- make -C /${APP_NAME} NODE_IP=${NODE_IP} HA_TOKEN=$HA_TOKEN all
+runuser -m -u admin -g ncsadmin -- make -C /${APP_NAME} NODE_IP=${NODE_IP} HA_TOKEN=$(head -n 1 /home/admin/ha_token) PRIMARY=$PRIMARY SECONDARY=$SECONDARY all
 cp package-store/dummy-1.0.tar.gz ${NCS_RUN_DIR}/packages
 cp package-store/ncs-${NSO_VERSION}-tailf-hcc-${HCC_VERSION}.tar.gz ${NCS_RUN_DIR}/packages
 runuser -m -u admin -g ncsadmin -- make start

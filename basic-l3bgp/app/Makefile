@@ -7,13 +7,13 @@ define init_xml
     <ha-node>\n\
       <id>$(1)</id>\n\
       <address>$(2)</address>\n\
-      <nominal-role>master</nominal-role>\n\
+      <nominal-role>$(11)</nominal-role>\n\
     </ha-node>\n\
     <ha-node>\n\
       <id>$(3)</id>\n\
       <address>$(4)</address>\n\
-      <nominal-role>slave</nominal-role>\n\
-      <failover-master>true</failover-master>\n\
+      <nominal-role>$(12)</nominal-role>\n\
+      <failover-$(11)>true</failover-$(11)>\n\
     </ha-node>\n\
     <settings>\n\
       <start-up>\n\
@@ -65,7 +65,7 @@ all:
 	tar cvfz dummy-1.0.tar.gz dummy-1.0 ; \
 	rm -rf dummy-1.0 ; \
 	sed -i.bak -e "s|<ncs-ipc-access-check>|<ncs-ipc-address><ip>0.0.0.0</ip></ncs-ipc-address><ncs-ipc-access-check>|" -e "s|<ha>.*</ha>||" -e "s|</ncs-config>|<ha><enabled>true</enabled><ip>0.0.0.0</ip></ha></ncs-config>|"  -e "s|</cli>|<style>c</style></cli>|" -e '/<ssh>/!b;n;c<enabled>true</enabled>' ${NCS_CONFIG_DIR}/ncs.conf ; \
-	$(call init_xml,${NODE1_NAME},${NODE1_IP},${NODE2_NAME},${NODE2_IP},${NSO_VIP},${NODE2_AS},${NODE1_AS},${NODE3_AS},${NODE2_GW},${NODE1_GW}) > ${NCS_RUN_DIR}/cdb/init.xml
+	$(call init_xml,${NODE1_NAME},${NODE1_IP},${NODE2_NAME},${NODE2_IP},${NSO_VIP},${NODE2_AS},${NODE1_AS},${NODE3_AS},${NODE2_GW},${NODE1_GW},${PRIMARY},${SECONDARY}) > ${NCS_RUN_DIR}/cdb/init.xml
 	cp package-store/dummy-1.0.tar.gz ${NCS_RUN_DIR}/packages ; \
 	cp ncs-*-tailf-hcc-*.tar.gz ${NCS_RUN_DIR}/packages
 

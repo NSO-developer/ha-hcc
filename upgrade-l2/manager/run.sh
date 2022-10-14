@@ -24,6 +24,23 @@ function version_ge() { test "$(printf '%s\n' "$@" | sort -rV | head -n 1)" == "
 
 NSO55=5.5
 NSO56=5.6
+NSO60=6.0
+
+# NSO 6 use primary secondary instead of master slave
+if version_ge ${NSO_VERSION} $NSO60; then
+  PRIMARY="primary"
+  SECONDARY="secondary"
+else
+  PRIMARY="master"
+  SECONDARY="slave"
+fi
+if version_ge ${NEW_NSO_VERSION} $NSO60; then
+  NEW_PRIMARY="primary"
+  NEW_SECONDARY="secondary"
+else
+  NEW_PRIMARY="master"
+  NEW_SECONDARY="slave"
+fi
 
 printf "\n${PURPLE}##### Start the rsyslog daemon and setup SSH\n${NC}"
 /usr/sbin/rsyslogd
@@ -44,7 +61,7 @@ do
 done
 set -e
 
-while [[ "$(on_primary 'show high-availability status connected-slave | notab')" != *"${NODE2_NAME}"* ]] ; do
+while [[ $(on_primary "show high-availability status connected-$SECONDARY | notab") != *"${NODE2_NAME}"* ]] ; do
   printf "${RED}#### Waiting for the secondary node ${NODE2_NAME} to connect...\n${NC}"
   sleep 1
 done
@@ -69,10 +86,10 @@ while [[ "$(on_node ${NODE1_NAME} 'show high-availability status mode')" != *"no
   sleep 1
 done
 
-on_node ${NODE1_NAME} "show high-availability status; show alarms; high-availability be-master"
+on_node ${NODE1_NAME} "show high-availability status; show alarms; high-availability be-$PRIMARY"
 on_node ${NODE2_NAME} "high-availability enable"
 
-while [[ "$(on_primary 'show high-availability status connected-slave | notab')" != *"${NODE2_NAME}"* ]] ; do
+while [[ $(on_primary "show high-availability status connected-$SECONDARY | notab") != *"${NODE2_NAME}"* ]] ; do
   printf "${RED}#### Waiting for the secondary node ${NODE2_NAME} to re-connect...\n${NC}"
   sleep 1
 done
@@ -80,7 +97,7 @@ done
 printf "\n${PURPLE}##### Disable HA on the primary ${NODE1_NAME} to make ${NODE2_NAME} failover to primary role\n${NC}"
 on_node ${NODE1_NAME} "high-availability disable"
 
-while [[ "$(on_node ${NODE2_NAME} 'show high-availability status mode')" != *"master"* ]] ; do
+while [[ "$(on_node ${NODE2_NAME} 'show high-availability status mode')" != *"$PRIMARY"* ]] ; do
   printf "${RED}#### Waiting for ${NODE2_NAME} to fail reconnect to ${NODE1_NAME} and assume primary role...\n${NC}"
   sleep 1
 done
@@ -100,7 +117,7 @@ on_primary "show high-availability status"
 printf "\n${PURPLE}##### Enable HA on ${NODE1_NAME} that will now assume secondary role\n${NC}"
 on_node ${NODE1_NAME} "high-availability enable"
 
-while [[ "$(on_node ${NODE1_NAME} 'show high-availability status mode')" != *"slave"* ]] ; do
+while [[ "$(on_node ${NODE1_NAME} 'show high-availability status mode')" != *"$SECONDARY"* ]] ; do
   printf "${RED}#### Waiting for ${NODE1_NAME} to become secondary to ${NODE2_NAME}...\n${NC}"
   sleep 1
 done
@@ -114,14 +131,14 @@ on_node ${NODE1_NAME} "high-availability disable"
 on_node ${NODE2_NAME} "high-availability disable"
 on_node ${NODE1_NAME} "high-availability enable"
 
-while [[ "$(on_node ${NODE1_NAME} 'show high-availability status mode')" != *"master"* ]]; do
+while [[ "$(on_node ${NODE1_NAME} 'show high-availability status mode')" != *"$PRIMARY"* ]]; do
     printf "${RED}#### Waiting for ${NODE1_NAME} to revert to primary role...\n${NC}"
     sleep 1
 done
 
 on_node ${NODE2_NAME} "high-availability enable"
 
-while [[ "$(on_node ${NODE2_NAME} 'show high-availability status mode')" != *"slave"* ]] ; do
+while [[ "$(on_node ${NODE2_NAME} 'show high-availability status mode')" != *"$SECONDARY"* ]] ; do
   printf "${RED}#### Waiting for ${NODE2_NAME} to revert to secondary role for primary ${NODE1_NAME}...\n${NC}"
   sleep 1
 done
@@ -139,15 +156,15 @@ on_primary_sh '$NCS_DIR/bin/ncs-backup'
 on_node_sh ${NODE2_NAME} '$NCS_DIR/bin/ncs-backup'
 
 printf "${PURPLE}##### Install NSO ${NEW_NSO_VERSION} on both nodes\n${NC}"
-scp_node /tmp/nso-${NEW_NSO_VERSION}.linux.x86_64.installer.bin root@${NSO_VIP}:/tmp/
+scp_node /tmp/nso-${NEW_NSO_VERSION}.linux.${NSO_ARCH}.installer.bin root@${NSO_VIP}:/tmp/
 scp_node /tmp/ncs-${NEW_NSO_VERSION}-tailf-hcc-${NEW_HCC_VERSION}.tar.gz admin@${NSO_VIP}:/${APP_NAME}/package-store/
 
-on_primary_root 'chmod u+x /tmp/nso-$NEW_NSO_VERSION.linux.x86_64.installer.bin; /tmp/nso-$NEW_NSO_VERSION.linux.x86_64.installer.bin --system-install --run-as-user admin --non-interactive; chown admin:ncsadmin $NCS_ROOT_DIR; chown root $NCS_ROOT_DIR/ncs-$NEW_NSO_VERSION/lib/ncs/lib/core/confd/priv/cmdwrapper; chmod u+s $NCS_ROOT_DIR/ncs-$NEW_NSO_VERSION/lib/ncs/lib/core/confd/priv/cmdwrapper; rm $NCS_DIR; ln -s $NCS_ROOT_DIR/ncs-$NEW_NSO_VERSION $NCS_DIR'
+on_primary_root 'chmod u+x /tmp/nso-$NEW_NSO_VERSION.linux.$NSO_ARCH.installer.bin; /tmp/nso-$NEW_NSO_VERSION.linux.$NSO_ARCH.installer.bin --system-install --run-as-user admin --non-interactive; chown admin:ncsadmin $NCS_ROOT_DIR; chown root $NCS_ROOT_DIR/ncs-$NEW_NSO_VERSION/lib/ncs/lib/core/confd/priv/cmdwrapper; chmod u+s $NCS_ROOT_DIR/ncs-$NEW_NSO_VERSION/lib/ncs/lib/core/confd/priv/cmdwrapper; rm $NCS_DIR; ln -s $NCS_ROOT_DIR/ncs-$NEW_NSO_VERSION $NCS_DIR'
 
-scp_node /tmp/nso-${NEW_NSO_VERSION}.linux.x86_64.installer.bin root@${NODE2_NAME}:/tmp/
+scp_node /tmp/nso-${NEW_NSO_VERSION}.linux.${NSO_ARCH}.installer.bin root@${NODE2_NAME}:/tmp/
 scp_node /tmp/ncs-${NEW_NSO_VERSION}-tailf-hcc-${NEW_HCC_VERSION}.tar.gz admin@${NODE2_NAME}:/${APP_NAME}/package-store/
 
-on_node_root ${NODE2_NAME} 'chmod u+x /tmp/nso-$NEW_NSO_VERSION.linux.x86_64.installer.bin; /tmp/nso-$NEW_NSO_VERSION.linux.x86_64.installer.bin --system-install --run-as-user admin --non-interactive; chown root $NCS_ROOT_DIR/ncs-$NEW_NSO_VERSION/lib/ncs/lib/core/confd/priv/cmdwrapper; chmod u+s $NCS_ROOT_DIR/ncs-$NEW_NSO_VERSION/lib/ncs/lib/core/confd/priv/cmdwrapper; rm $NCS_DIR; ln -s $NCS_ROOT_DIR/ncs-$NEW_NSO_VERSION $NCS_DIR'
+on_node_root ${NODE2_NAME} 'chmod u+x /tmp/nso-$NEW_NSO_VERSION.linux.$NSO_ARCH.installer.bin; /tmp/nso-$NEW_NSO_VERSION.linux.$NSO_ARCH.installer.bin --system-install --run-as-user admin --non-interactive; chown root $NCS_ROOT_DIR/ncs-$NEW_NSO_VERSION/lib/ncs/lib/core/confd/priv/cmdwrapper; chmod u+s $NCS_ROOT_DIR/ncs-$NEW_NSO_VERSION/lib/ncs/lib/core/confd/priv/cmdwrapper; rm $NCS_DIR; ln -s $NCS_ROOT_DIR/ncs-$NEW_NSO_VERSION $NCS_DIR'
 
 # NSO 5.5 removed the show-log-directory parameter.
 if version_lt $NSO_VERSION $NSO55 && version_ge $NEW_NSO_VERSION $NSO55; then
@@ -156,8 +173,7 @@ if version_lt $NSO_VERSION $NSO55 && version_ge $NEW_NSO_VERSION $NSO55; then
 fi
 
 # NSO 5.6 removed the large-scale parameters
-if version_lt $NSO_VERSION $NSO56 && version_ge $NEW_NSO_VERSION $NSO56
-then
+if version_lt $NSO_VERSION $NSO56 && version_ge $NEW_NSO_VERSION $NSO56; then
     on_primary_sh 'sed -i.bak "/<large-scale>/I,+7 d" $NCS_CONFIG_DIR/ncs.conf'
     on_node_sh ${NODE2_NAME} 'sed -i.bak "/<large-scale>/I,+7 d" $NCS_CONFIG_DIR/ncs.conf'
 fi
@@ -170,6 +186,11 @@ on_primary_sh 'cd /$APP_NAME; make HCC_TARBALL_NAME="ncs-${NEW_NSO_VERSION}-tail
 
 printf "\n${PURPLE}##### Replace the currently installed packages on the ${NODE1_NAME} node with the ones built for NSO ${NEW_NSO_VERSION}\n${NC}"
 on_primary_sh 'rm $NCS_RUN_DIR/packages/* ; cp /$APP_NAME/package-store/dummy-1.0.tar.gz $NCS_RUN_DIR/packages ; cp /$APP_NAME/package-store/ncs-$NEW_NSO_VERSION-tailf-hcc-$NEW_HCC_VERSION.tar.gz $NCS_RUN_DIR/packages'
+
+MAKE_HA_INIT='make -C /${APP_NAME} NODE_IP=${NODE_IP} HA_TOKEN=$(head -n 1 /home/admin/ha_token)'
+MAKE_HA_INIT+=" PRIMARY=$NEW_PRIMARY SECONDARY=$NEW_SECONDARY ha_init"
+printf "\n${PURPLE}##### Re-generate ${NODE1_NAME} node HA init config for NSO ${NEW_NSO_VERSION}\n${NC}"
+on_primary_sh "$MAKE_HA_INIT"
 
 printf "\n${PURPLE}##### Disable primary node ${NODE1_NAME} high availability for secondary node ${NODE2_NAME} to automatically failover and assume primary role in read-only mode\n${NC}"
 on_node ${NODE1_NAME} "high-availability disable; software packages list; show packages"
@@ -186,13 +207,19 @@ on_node ${NODE1_NAME} "high-availability enable; software packages list; show pa
 printf "\n${PURPLE}##### Rebuild the secondary ${NODE2_NAME} node packages in its package store for NSO ${NEW_NSO_VERSION}\n${NC}"
 on_node_sh ${NODE2_NAME} 'source $NCS_DIR/ncsrc; cd /$APP_NAME; make rebuild-packages'
 
+printf "\n${PURPLE}##### Apply a temporary privilege issue fix to the Tail-f HCC package\n${NC}"
+on_node_sh ${NODE2_NAME} 'cd /$APP_NAME; make HCC_TARBALL_NAME="ncs-${NEW_NSO_VERSION}-tailf-hcc-${NEW_HCC_VERSION}.tar.gz" hcc-fix'
+
 printf "\n${PURPLE}##### Replace the currently installed packages on the ${NODE2_NAME} node with the ones built for NSO ${NEW_NSO_VERSION}\n${NC}"
 on_node_sh ${NODE2_NAME} 'rm $NCS_RUN_DIR/packages/* ; cp /$APP_NAME/package-store/dummy-1.0.tar.gz $NCS_RUN_DIR/packages ; cp /$APP_NAME/package-store/ncs-$NEW_NSO_VERSION-tailf-hcc-$NEW_HCC_VERSION.tar.gz $NCS_RUN_DIR/packages'
+
+printf "\n${PURPLE}##### Re-generate ${NODE2_NAME} node HA init config for NSO ${NEW_NSO_VERSION}\n${NC}"
+on_node_sh ${NODE2_NAME} "$MAKE_HA_INIT"
 
 printf "\n${PURPLE}##### Upgrade the ${NODE2_NAME} node to $NEW_NSO_VERSION\n${NC}"
 on_node_sh ${NODE2_NAME} '$NCS_DIR/bin/ncs --stop; $NCS_DIR/bin/ncs -c $NCS_CONFIG_DIR/ncs.conf --with-package-reload'
 
-while [[ "$(on_node ${NODE1_NAME} 'show high-availability status mode')" != *"master"* ]]; do
+while [[ "$(on_node ${NODE1_NAME} 'show high-availability status mode')" != *"$NEW_PRIMARY"* ]]; do
     printf "${RED}#### Waiting for ${NODE1_NAME} to assume primary role...\n${NC}"
     sleep 1
 done
@@ -200,7 +227,7 @@ done
 printf "\n${PURPLE}##### Enable high availability for the ${NODE2_NAME} node that will assume secondary role\n${NC}"
 on_node ${NODE2_NAME} "high-availability enable; software packages list; show packages"
 
-while [[ "$(on_node ${NODE2_NAME} 'show high-availability status mode')" != *"slave"* ]] ; do
+while [[ "$(on_node ${NODE2_NAME} 'show high-availability status mode')" != *"$NEW_SECONDARY"* ]] ; do
   printf "${RED}#### Waiting for ${NODE2_NAME} to assume secondary role...\n${NC}"
   sleep 1
 done

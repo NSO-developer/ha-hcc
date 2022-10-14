@@ -1,15 +1,17 @@
 FROM debian:11-slim
 
-ARG NODE3_NAME
-ARG APP_NAME
+ARG NSO_ARCH
 ARG NEW_NSO_VERSION
 ARG NEW_HCC_VERSION
+ARG APP_NAME
+ARG NODE3_NAME
 
-ENV APP_NAME=${APP_NAME}
+ENV NSO_ARCH=${NSO_ARCH}
 ENV NEW_NSO_VERSION=${NEW_NSO_VERSION}
 ENV NEW_HCC_VERSION=${NEW_HCC_VERSION}
+ENV APP_NAME=${APP_NAME}
 
-COPY nso-${NEW_NSO_VERSION}.linux.x86_64.installer.bin /tmp/
+COPY nso-${NEW_NSO_VERSION}.linux.${NSO_ARCH}.installer.bin /tmp/
 COPY ncs-${NEW_NSO_VERSION}-tailf-hcc-${NEW_HCC_VERSION}.tar.gz /tmp/
 RUN apt-get update \
     && apt-get install -y --no-install-recommends socat net-tools \

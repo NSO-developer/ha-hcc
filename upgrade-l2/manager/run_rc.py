@@ -80,31 +80,47 @@ def ha_upgrade_demo():
     endc = '\033[0m'
     bold = '\033[1m'
 
+    # NSO 6 use primary secondary instead of master slave
+    primary = "primary"
+    secondary = "secondary"
+    new_primary = "primary"
+    new_secondary = "secondary"
+    if version.parse(nso_version) < version.parse("6.0"):
+        primary = "master"
+        secondary = "slave"
+    if version.parse(new_nso_version) < version.parse("6.0"):
+        new_primary = "master"
+        new_secondary = "slave"
+
     print(f"\n{okgreen}##### A two node HA setup with one primary " +
           node1_name + " and one secondary " + node2_name + f" node\n{endc}")
     print(f"\n{okblue}##### VIP address: " + nso_vip + f"\n{endc}")
 
     print(f"\n{okblue}##### Initialize the two nodes\n{endc}")
-    on_node_sh(node1_name, "root",
-               'rm -rf $NCS_ROOT_DIR/ncs-$NEW_NSO_VERSION')
+    if version.parse(nso_version) != version.parse(new_nso_version):
+        on_node_sh(node1_name, "root",
+                'rm -rf $NCS_ROOT_DIR/ncs-$NEW_NSO_VERSION')
     on_node_sh(node1_name, "admin",
                'rm $NCS_DIR;'
                'ln -s $NCS_ROOT_DIR/ncs-$NSO_VERSION $NCS_DIR;'
                'source $NCS_DIR/ncsrc;'
                'cd /$APP_NAME;'
-               'make stop clean NODE_IP=$NODE_IP all;'
+               'make stop clean NODE_IP=$NODE_IP PRIMARY=' + primary +
+               ' SECONDARY=' + secondary + ' all;'
                'cp package-store/dummy-1.0.tar.gz $NCS_RUN_DIR/packages;'
                'cp package-store/token-1.0.tar.gz $NCS_RUN_DIR/packages;'
                'cp package-store/ncs-$NSO_VERSION-tailf-hcc-$HCC_VERSION.tar.gz'
                ' $NCS_RUN_DIR/packages; make start')
-    on_node_sh(node2_name, "root",
-               'rm -rf $NCS_ROOT_DIR/ncs-$NEW_NSO_VERSION;')
+    if version.parse(nso_version) != version.parse(new_nso_version):
+        on_node_sh(node2_name, "root",
+                'rm -rf $NCS_ROOT_DIR/ncs-$NEW_NSO_VERSION;')
     on_node_sh(node2_name, "admin",
                'rm $NCS_DIR;'
                'ln -s $NCS_ROOT_DIR/ncs-$NSO_VERSION $NCS_DIR;'
                'source $NCS_DIR/ncsrc;'
                'cd /$APP_NAME;'
-               'make stop clean NODE_IP=$NODE_IP all;'
+               'make stop clean NODE_IP=$NODE_IP PRIMARY=' + primary +
+               ' SECONDARY=' + secondary + ' all;'
                'cp package-store/dummy-1.0.tar.gz $NCS_RUN_DIR/packages;'
                'cp package-store/token-1.0.tar.gz $NCS_RUN_DIR/packages;'
                'cp package-store/ncs-$NSO_VERSION-tailf-hcc-$HCC_VERSION.tar.gz'
@@ -147,7 +163,7 @@ def ha_upgrade_demo():
         time.sleep(1)
 
     while True:
-        path = '/data/tailf-ncs:high-availability/status/connected-slave'
+        path = '/data/tailf-ncs:high-availability/status/connected-' + secondary
         print(f"{bold}GET " + vip_url + path + f"{endc}")
         r = requests.get(vip_url + path, headers=headers, verify=False)
         if node2_name in r.text:
@@ -236,11 +252,11 @@ def ha_upgrade_demo():
     print("Status code: {}\n".format(r.status_code))
 
     while True:
-        print(f"\n{header}##### Waiting for a ha-slave-down alarm to be"
+        print(f"\n{header}##### Waiting for a ha-" + secondary + "-down alarm to be"
               f" generated...{endc}")
         alarm_str = q.get()
         print(f"{header}" + alarm_str + f"{endc}")
-        if "ha-slave-down" in alarm_str:
+        if "ha-{}-down".format(secondary) in alarm_str:
             alarm_process.terminate()
             break
 
@@ -249,7 +265,7 @@ def ha_upgrade_demo():
     r = requests.get(node1_url + path, headers=headers, verify=False)
     print(r.text)
 
-    path = '/operations/high-availability/be-master'
+    path = '/operations/high-availability/be-{}'.format(primary)
     print(f"{bold}POST " + node1_url + path + f"{endc}")
     r = requests.post(node1_url + path, headers=headers, verify=False)
     print("Status code: {}\n".format(r.status_code))
@@ -260,7 +276,7 @@ def ha_upgrade_demo():
     print("Status code: {}\n".format(r.status_code))
 
     while True:
-        path = '/data/tailf-ncs:high-availability/status/connected-slave'
+        path = '/data/tailf-ncs:high-availability/status/connected-' + secondary
         print(f"{bold}GET " + vip_url + path + f"{endc}")
         r = requests.get(vip_url + path, headers=headers, verify=False)
         if node2_name in r.text:
@@ -280,7 +296,7 @@ def ha_upgrade_demo():
         path = '/data/tailf-ncs:high-availability/status/mode'
         print(f"{bold}GET " + node2_url + path + f"{endc}")
         r = requests.get(node2_url + path, headers=headers, verify=False)
-        if "master" in r.text:
+        if primary in r.text:
             break
         print(f"{header}#### Waiting for " + node2_name + " to fail reconnect"
               " to " + node1_name + f" and assume primary role...\n{endc}")
@@ -321,7 +337,7 @@ def ha_upgrade_demo():
         path = '/data/tailf-ncs:high-availability/status/mode'
         print(f"{bold}GET " + node1_url + path + f"{endc}")
         r = requests.get(node1_url + path, headers=headers, verify=False)
-        if "slave" in r.text:
+        if secondary in r.text:
             break
         print(f"{header}#### Waiting for " + node1_name + " to become"
               " secondary to " + node2_name + f"...{endc}")
@@ -356,7 +372,7 @@ def ha_upgrade_demo():
         path = '/data/tailf-ncs:high-availability/status/mode'
         print(f"{bold}GET " + node1_url + path + f"{endc}")
         r = requests.get(node1_url + path, headers=headers, verify=False)
-        if "master" in r.text:
+        if primary in r.text:
             break
         print(f"{header}#### Waiting for " + node1_name + " to revert to"
               f" primary role...{endc}")
@@ -371,7 +387,7 @@ def ha_upgrade_demo():
         path = '/data/tailf-ncs:high-availability/status/mode'
         print(f"{bold}GET " + node2_url + path + f"{endc}")
         r = requests.get(node2_url + path, headers=headers, verify=False)
-        if "slave" in r.text:
+        if secondary in r.text:
             break
         print(f"{header}#### Waiting for " + node2_name + " to revert to"
               " secondary role for primary " + node1_name + f"...\n{endc}")
@@ -431,8 +447,8 @@ def ha_upgrade_demo():
     print(f"{okblue}##### Install NSO " + new_nso_version +
           f" on both nodes\n{endc}")
     on_node_sh(nso_vip, "root",
-               'chmod u+x /tmp/nso-$NEW_NSO_VERSION.linux.x86_64.installer.bin;'
-               '/tmp/nso-$NEW_NSO_VERSION.linux.x86_64.installer.bin'
+               'chmod u+x /tmp/nso-$NEW_NSO_VERSION.linux.$NSO_ARCH.installer.bin;'
+               '/tmp/nso-$NEW_NSO_VERSION.linux.$NSO_ARCH.installer.bin'
                ' --system-install --run-as-user admin --non-interactive;'
                'chown admin:ncsadmin $NCS_ROOT_DIR;'
                'chown root $NCS_ROOT_DIR/ncs-$NEW_NSO_VERSION/lib/ncs/lib/core/'
@@ -442,8 +458,8 @@ def ha_upgrade_demo():
                'rm $NCS_DIR;'
                'ln -s $NCS_ROOT_DIR/ncs-$NEW_NSO_VERSION $NCS_DIR')
     on_node_sh(node2_name, "root",
-               'chmod u+x /tmp/nso-$NEW_NSO_VERSION.linux.x86_64.installer.bin;'
-               '/tmp/nso-$NEW_NSO_VERSION.linux.x86_64.installer.bin'
+               'chmod u+x /tmp/nso-$NEW_NSO_VERSION.linux.$NSO_ARCH.installer.bin;'
+               '/tmp/nso-$NEW_NSO_VERSION.linux.$NSO_ARCH.installer.bin'
                ' --system-install --run-as-user admin --non-interactive;'
                'chown admin:ncsadmin $NCS_ROOT_DIR;'
                'chown root $NCS_ROOT_DIR/ncs-$NEW_NSO_VERSION/lib/ncs/lib/core/'
@@ -484,6 +500,12 @@ def ha_upgrade_demo():
        'cp /$APP_NAME/package-store/token-1.0.tar.gz $NCS_RUN_DIR/packages;'
        'cp /$APP_NAME/package-store/ncs-$NEW_NSO_VERSION-tailf-hcc-'
        '$NEW_HCC_VERSION.tar.gz $NCS_RUN_DIR/packages')
+
+    print(f"\n{okblue}##### Re-generate " + node1_name + " node HA init " +
+          "config for NSO " + new_nso_version +f"\n{endc}")
+    on_node_sh(nso_vip, "admin", 'make -C /${APP_NAME} NODE_IP=${NODE_IP}'
+        ' HA_TOKEN=$(head -n 1 /home/admin/ha_token) PRIMARY=' + new_primary +
+        ' SECONDARY=' + new_secondary + ' ha_init')
 
     print(f"\n{okblue}##### Disable primary node " + node1_name +
           " high availability for secondary node " + node2_name +
@@ -537,6 +559,12 @@ def ha_upgrade_demo():
            'cp /$APP_NAME/package-store/ncs-$NEW_NSO_VERSION-tailf-hcc-'
            '$NEW_HCC_VERSION.tar.gz $NCS_RUN_DIR/packages')
 
+    print(f"\n{okblue}##### Re-generate " + node2_name + " node HA init " +
+          "config for NSO " + new_nso_version +f"\n{endc}")
+    on_node_sh(node2_name, "admin", 'make -C /${APP_NAME} NODE_IP=${NODE_IP}'
+        ' HA_TOKEN=$(head -n 1 /home/admin/ha_token) PRIMARY=' + new_primary +
+        ' SECONDARY=' + new_secondary + ' ha_init')
+
     print(f"\n{okblue}##### Upgrade the " + node2_name + " node to " +
           new_nso_version + f"\n{endc}")
     on_node_sh(node2_name, "admin", '$NCS_DIR/bin/ncs --stop; $NCS_DIR/bin/ncs -c'
@@ -547,7 +575,7 @@ def ha_upgrade_demo():
         path = '/data/tailf-ncs:high-availability/status/mode'
         print(f"{bold}GET " + node1_url + path + f"{endc}")
         r = requests.get(node1_url + path, headers=headers, verify=False)
-        if "master" in r.text:
+        if new_primary in r.text:
             break
         print(f"{header}#### Waiting for " + node1_name + " to assume"
               f" primary role...{endc}")
@@ -564,7 +592,7 @@ def ha_upgrade_demo():
         path = '/data/tailf-ncs:high-availability/status/mode'
         print(f"{bold}GET " + node2_url + path + f"{endc}")
         r = requests.get(node2_url + path, headers=headers, verify=False)
-        if "slave" in r.text:
+        if new_secondary in r.text:
             break
         print(f"{header}#### Waiting for " + node2_name + " to assume"
               f" secondary role...\n{endc}")

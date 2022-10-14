@@ -35,16 +35,16 @@ london:  NSO, Tail-f HCC package (uses arping and iproute2 utils)
 Prerequisites
 ~~~~~~~~~~~~~
 - NSO_VERSION >= 5.8
-- nso-${NSO_VERSION}.linux.x86_64.installer.bin x 2, e.g. for NSO 5.8 and 5.8.3
-- ncs-${NSO_VERSION}-tailf-hcc-${TAILF_HCC_VERSION}.tar.gz x 2, e.g 5.8 and 5.8.3
+- nso-${NSO_VERSION}.linux.${NSO_ARCH}.installer.bin x 2, e.g. for NSO 5.8.4 and 6.0
+- ncs-${NSO_VERSION}-tailf-hcc-${TAILF_HCC_VERSION}.tar.gz x 2, e.g 5.8.4 and 6.0
     Example:
     $ pwd
     /Users/tailf/upgrade-l2
     $ ls -1 n*
-    ncs-5.8-tailf-hcc-5.0.3.tar.gz
-    ncs-5.8.3-tailf-hcc-5.0.3.tar.gz
-    nso-5.8.3.linux.x86_64.installer.bin
-    nso-5.8.linux.x86_64.installer.bin
+    ncs-5.8.4-tailf-hcc-5.0.3.tar.gz
+    ncs-6.0-tailf-hcc-5.0.4.tar.gz
+    nso-5.8.4.linux.x86_64.installer.bin
+    nso-6.0.linux.x86_64.installer.bin
 - Docker installed
 
 Running the Example
@@ -55,6 +55,7 @@ Running the Example
    Select the Debian or the RedHat Universal Base Image (UBI) Linux
    distribution for the paris and london nodes. The default is Debian. Change
    the NODE12_DOCKERFILE variable in the setup.sh file to use RedHat.
+   Select the NSO_ARCH in the setup.sh file. The default is x86_64.
 2. Run the setup.sh script:
     $ ./setup.sh # will follow the manager node output after setup
    In another terminal window:
