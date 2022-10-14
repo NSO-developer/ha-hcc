@@ -1,6 +1,6 @@
 #!/bin/bash
-NSO_VERSION="5.8"
-TAILF_HCC_VERSION="5.0.3"
+NSO_VERSION="6.0"
+TAILF_HCC_VERSION="5.0.4"
 APP_NAME="app"
 NET1_NAME="ParisNet"
 NET2_NAME="LondonNet"
@@ -136,7 +136,7 @@ done
 NODE3_IP=$(docker inspect router --format='{{.NetworkSettings.Networks.bridge.IPAddress}}')
 
 echo "Run the $NODE2_NAME container"
-N2_CID="$(docker run --hostname $NODE2_NAME --cap-add NET_ADMIN --net $NET2_NAME --ip $NODE2_IP --name $NODE2_NAME -d --rm -e NSO_VIP=$NSO_VIP -e NODE1_NAME=$NODE1_NAME -e NODE2_NAME=$NODE2_NAME -e NODE3_NAME=$NODE3_NAME -e NODE1_IP=$NODE1_IP -e NODE2_IP=$NODE2_IP -e NODE3_IP=$NODE3_IP -e NODE1_AS=$NODE1_AS -e NODE2_AS=$NODE2_AS -e NODE3_AS=$NODE3_AS -e NODE1_GW=$NODE1_GW -e NODE2_GW=$NODE2_GW -e SUBNET1=$SUBNET1 -e SUBNET2=$SUBNET2 $IMG2_NAME | cut -c1-12)"
+N2_CID="$(docker run --hostname $NODE2_NAME --cap-add NET_ADMIN --net $NET2_NAME --ip $NODE2_IP --name $NODE2_NAME -d --rm -e NSO_VIP=$NSO_VIP -e NODE1_NAME=$NODE1_NAME -e NODE2_NAME=$NODE2_NAME -e NODE3_NAME=$NODE3_NAME -e NODE1_IP=$NODE1_IP -e NODE2_IP=$NODE2_IP -e NODE3_IP=$NODE3_IP -e NODE1_AS=$NODE1_AS -e NODE2_AS=$NODE2_AS -e NODE3_AS=$NODE3_AS -e NODE1_GW=$NODE1_GW -e NODE2_GW=$NODE2_GW -e SUBNET1=$SUBNET1 -e SUBNET2=$SUBNET2 -e NSO_VERSION=$NSO_VERSION $IMG2_NAME | cut -c1-12)"
 
 while [[ $(docker ps -l -a -q -f status=running | grep $N2_CID) != $N2_CID ]]; do
     echo "Waiting for $NODE2_NAME..."
@@ -151,7 +151,7 @@ while [ $ecode -ne 0 ]; do
 done
 
 echo "Run the $NODE1_NAME container"
-N1_CID="$(docker run --hostname $NODE1_NAME --cap-add NET_ADMIN --net $NET1_NAME --ip $NODE1_IP --name $NODE1_NAME -d --rm -e NSO_VIP=$NSO_VIP -e NODE1_NAME=$NODE1_NAME -e NODE2_NAME=$NODE2_NAME -e NODE3_NAME=$NODE3_NAME -e NODE1_IP=$NODE1_IP -e NODE2_IP=$NODE2_IP -e NODE3_IP=$NODE3_IP -e NODE1_AS=$NODE1_AS -e NODE2_AS=$NODE2_AS -e NODE3_AS=$NODE3_AS -e NODE1_GW=$NODE1_GW -e NODE2_GW=$NODE2_GW -e SUBNET1=$SUBNET1 -e SUBNET2=$SUBNET2 $IMG1_NAME | cut -c1-12)"
+N1_CID="$(docker run --hostname $NODE1_NAME --cap-add NET_ADMIN --net $NET1_NAME --ip $NODE1_IP --name $NODE1_NAME -d --rm -e NSO_VIP=$NSO_VIP -e NODE1_NAME=$NODE1_NAME -e NODE2_NAME=$NODE2_NAME -e NODE3_NAME=$NODE3_NAME -e NODE1_IP=$NODE1_IP -e NODE2_IP=$NODE2_IP -e NODE3_IP=$NODE3_IP -e NODE1_AS=$NODE1_AS -e NODE2_AS=$NODE2_AS -e NODE3_AS=$NODE3_AS -e NODE1_GW=$NODE1_GW -e NODE2_GW=$NODE2_GW -e SUBNET1=$SUBNET1 -e SUBNET2=$SUBNET2 -e NSO_VERSION=$NSO_VERSION $IMG1_NAME | cut -c1-12)"
 
 while [[ $(docker ps -l -a -q -f status=running | grep $N1_CID) != $N1_CID ]]; do
     echo "Waiting for $NODE1_NAME..."
