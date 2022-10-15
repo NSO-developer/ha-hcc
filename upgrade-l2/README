@@ -100,7 +100,9 @@ Running the Example
       london node.
    u. Add some new config through the primary paris node.
    v. Done!
-   x. Follow the developer log.
+   x. Follow the /var/log/daemon.log syslog. See the rsyslogd /etc/rsyslog.conf
+      and NSO $NCS_CONFIG_DIR/ncs.conf under /ncs-config/logs in the paris and
+      london containers for detals.
 4. Connect to the NSO CLI on the current primary node VIP through the
    management station:
     $ docker exec -it manager bash
