@@ -67,7 +67,19 @@ all:
 	sed -i.bak -e "s|<ncs-ipc-access-check>|<ncs-ipc-address><ip>0.0.0.0</ip></ncs-ipc-address><ncs-ipc-access-check>|" -e "s|<ha>.*</ha>||" -e "s|</ncs-config>|<ha><enabled>true</enabled><ip>0.0.0.0</ip></ha></ncs-config>|"  -e "s|</cli>|<style>c</style></cli>|" -e '/<ssh>/!b;n;c<enabled>true</enabled>' ${NCS_CONFIG_DIR}/ncs.conf ; \
 	$(call init_xml,${NODE1_NAME},${NODE1_IP},${NODE2_NAME},${NODE2_IP},${NSO_VIP},${NODE2_AS},${NODE1_AS},${NODE3_AS},${NODE2_GW},${NODE1_GW},${PRIMARY},${SECONDARY}) > ${NCS_RUN_DIR}/cdb/init.xml
 	cp package-store/dummy-1.0.tar.gz ${NCS_RUN_DIR}/packages ; \
-	cp ncs-*-tailf-hcc-*.tar.gz ${NCS_RUN_DIR}/packages
+	cp package-store/ncs-*-tailf-hcc-*.tar.gz ${NCS_RUN_DIR}/packages
+
+hcc-fix:
+	cd package-store ; \
+	tar xfz $(HCC_TARBALL_NAME) ; \
+	sed -i.bak -e 's/ip address/sudo ip address/g' tailf-hcc/priv/vipctl ; \
+	sed -i.bak -e 's/arping -q/sudo arping -q/g' tailf-hcc/priv/vipctl ; \
+	sed -i.bak -e 's/"sudo "/""/' tailf-hcc/erlang-lib/tailf_hcc/src/tailf_hcc_server.erl ; \
+  sed -i.bak -e 's/sudo() ++ //' tailf-hcc/erlang-lib/tailf_hcc/src/tailf_hcc_server.erl ; \
+  sed -i.bak -e 's/sudo(), //' tailf-hcc/erlang-lib/tailf_hcc/src/tailf_hcc_server.erl ; \
+	${NCS_DIR}/bin/erlc -I ${NCS_DIR}/erlang/econfd/include -o tailf-hcc/erlang-lib/tailf_hcc/ebin tailf-hcc/erlang-lib/tailf_hcc/src/tailf_hcc_server.erl ; \
+	tar cfz $(HCC_TARBALL_NAME) tailf-hcc ; \
+	rm -rf tailf-hcc
 
 clean:
 	-rm -rf ${NCS_LOG_DIR}/* ${NCS_RUN_DIR}/packages/* ${NCS_RUN_DIR}/backups/* ${NCS_RUN_DIR}/cdb/init.xml ${NCS_RUN_DIR}/cdb/*.cdb  ${NCS_RUN_DIR}/scripts/* ${NCS_RUN_DIR}/state/* ${NCS_RUN_DIR}/streams/* ${NCS_RUN_DIR}/rollbacks/*
