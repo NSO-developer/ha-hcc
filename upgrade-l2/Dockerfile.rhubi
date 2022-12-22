@@ -36,6 +36,7 @@ RUN yum install -y python3 java-17-openjdk-devel make openssl openssh-server \
     && /tmp/nso-${NSO_VERSION}.linux.${NSO_ARCH}.installer.bin --system-install \
        --run-as-user admin --non-interactive \
     && echo "admin ALL = (root) NOPASSWD: /sbin/ip" >> /etc/sudoers \
+    && echo "admin ALL = (root) NOPASSWD: /opt/ncs/current/lib/ncs/bin/arping" >> /etc/sudoers \
     && mkdir /home/admin/.ssh \
     && touch /home/admin/.ssh/authorized_keys \
     && mkdir /home/oper/.ssh \

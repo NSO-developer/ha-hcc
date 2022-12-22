@@ -59,7 +59,6 @@ define init_xml
 endef
 
 all:
-	mkdir -p package-store
 	cd package-store ; \
 	ncs-make-package --service-skeleton template --dest dummy-1.0 --build --no-test --root-container dummies dummy ; \
 	tar cvfz dummy-1.0.tar.gz dummy-1.0 ; \

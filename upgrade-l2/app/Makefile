@@ -159,6 +159,7 @@ hcc-fix:
 	cd /${APP_NAME}/package-store ; \
 	tar xfz $(HCC_TARBALL_NAME) ; \
 	sed -i.bak -e 's/ip address/sudo ip address/g' tailf-hcc/priv/vipctl ; \
+	sed -i.bak -e 's/arping -q/sudo arping -q/g' tailf-hcc/priv/vipctl ; \
 	sed -i.bak -e 's/"sudo "/""/' tailf-hcc/erlang-lib/tailf_hcc/src/tailf_hcc_server.erl ; \
 	${NCS_DIR}/bin/erlc -I ${NCS_DIR}/erlang/econfd/include -o tailf-hcc/erlang-lib/tailf_hcc/ebin tailf-hcc/erlang-lib/tailf_hcc/src/tailf_hcc_server.erl ; \
 	tar cfz $(HCC_TARBALL_NAME) tailf-hcc ; \
