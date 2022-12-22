@@ -59,7 +59,7 @@ define init_xml
 endef
 
 all:
-	cd /${APP_NAME}/package-store ; \
+	cd package-store ; \
 	ncs-make-package --service-skeleton template --dest dummy-1.0 --build --no-test --root-container dummies dummy ; \
 	tar cvfz dummy-1.0.tar.gz dummy-1.0 ; \
 	rm -rf dummy-1.0 ; \
@@ -69,7 +69,7 @@ all:
 	cp package-store/ncs-*-tailf-hcc-*.tar.gz ${NCS_RUN_DIR}/packages
 
 hcc-fix:
-	cd /${APP_NAME}/package-store ; \
+	cd package-store ; \
 	tar xfz $(HCC_TARBALL_NAME) ; \
 	sed -i.bak -e 's/ip address/sudo ip address/g' tailf-hcc/priv/vipctl ; \
 	sed -i.bak -e 's/arping -q/sudo arping -q/g' tailf-hcc/priv/vipctl ; \
