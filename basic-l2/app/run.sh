@@ -27,6 +27,9 @@ printf "${PURPLE}NODE1: ${NODE1_NAME} NODE1_IP: ${NODE1_IP}\n${NC}"
 printf "${PURPLE}NODE2: ${NODE2_NAME} NODE2_IP: ${NODE2_IP}\n${NC}"
 printf "${PURPLE}NSO_VIP: ${NSO_VIP}\n${NC}"
 
+printf "\n${PURPLE}##### Apply a temporary privilege issue fix to the Tail-f HCC package\n${NC}"
+make HCC_TARBALL_NAME="ncs-${NSO_VERSION}-tailf-hcc-${TAILF_HCC_VERSION}.tar.gz" hcc-fix
+
 printf "\n${PURPLE}##### Reset, setup, start, and enable HA assuming start-up settings\n${NC}"
 make stop &> /dev/null
 make clean NODE1_IP=${NODE1_IP} NODE2_IP=${NODE2_IP} PRIMARY=$PRIMARY SECONDARY=$SECONDARY all start

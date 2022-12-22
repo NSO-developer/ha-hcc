@@ -43,7 +43,6 @@ printf "\n${PURPLE}##### Apply a temporary privilege issue fix to the Tail-f HCC
 make HCC_TARBALL_NAME="ncs-${NSO_VERSION}-tailf-hcc-${TAILF_HCC_VERSION}.tar.gz" hcc-fix
 
 printf "\n${PURPLE}##### Reset, setup, start, and enable HA assuming start-up settings\n${NC}"
-
 make stop &> /dev/null
 make clean PRIMARY=$PRIMARY SECONDARY=$SECONDARY all start
 

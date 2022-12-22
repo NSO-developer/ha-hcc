@@ -35,6 +35,7 @@ RUN mkdir -p /usr/share/man/man1 \
        --run-as-user admin --non-interactive \
     && setcap CAP_NET_BIND_SERVICE=+ep /usr/bin/gobgpd \
     && setcap CAP_NET_ADMIN=+ep /bin/ip \
+    && setcap CAP_NET_RAW=+ep /usr/sbin/arping \
     && echo "admin ALL = (root) NOPASSWD: /bin/ip" >> /etc/sudoers \
     && echo "admin ALL = (root) NOPASSWD: /opt/ncs/current/lib/ncs/bin/arping" >> /etc/sudoers \
     && apt-get autoremove -y \

@@ -106,7 +106,7 @@ all: packages ha_init
 	$(call globs_init_xml,${NCS_LOG_DIR}) > ${NCS_RUN_DIR}/cdb/globs_init.xml
 
 packages:
-	cd package-store ; \
+	cd /${APP_NAME}/package-store ; \
 	rm -f dummy* inert* tokens*; \
 	ncs-make-package --service-skeleton template --dest token-1.0 --no-test --root-container tokens token ; \
 	rm -rf token-1.0/templates/* ; \
@@ -137,7 +137,7 @@ ha_init:
 	$(call ha_init_xml,${HA_TOKEN},${NODE1_NAME},${NODE1_IP},${NODE2_NAME},${NODE2_IP},${NSO_VIP},${PRIMARY},${SECONDARY}) > ${NCS_RUN_DIR}/cdb/ha_init.xml
 
 rebuild-packages:
-	cd package-store ; \
+	cd /${APP_NAME}/package-store ; \
 	tar xfz token-1.0.tar.gz ; \
 	make -C token-1.0/src clean all ; \
 	tar cfz token-1.0.tar.gz token-1.0 ; \
@@ -161,6 +161,8 @@ hcc-fix:
 	sed -i.bak -e 's/ip address/sudo ip address/g' tailf-hcc/priv/vipctl ; \
 	sed -i.bak -e 's/arping -q/sudo arping -q/g' tailf-hcc/priv/vipctl ; \
 	sed -i.bak -e 's/"sudo "/""/' tailf-hcc/erlang-lib/tailf_hcc/src/tailf_hcc_server.erl ; \
+	sed -i.bak -e 's/sudo() ++ //' tailf-hcc/erlang-lib/tailf_hcc/src/tailf_hcc_server.erl ; \
+	sed -i.bak -e 's/sudo(), //' tailf-hcc/erlang-lib/tailf_hcc/src/tailf_hcc_server.erl ; \
 	${NCS_DIR}/bin/erlc -I ${NCS_DIR}/erlang/econfd/include -o tailf-hcc/erlang-lib/tailf_hcc/ebin tailf-hcc/erlang-lib/tailf_hcc/src/tailf_hcc_server.erl ; \
 	tar cfz $(HCC_TARBALL_NAME) tailf-hcc ; \
 	rm -rf tailf-hcc

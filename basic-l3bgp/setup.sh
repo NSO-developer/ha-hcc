@@ -1,5 +1,5 @@
 #!/bin/bash
-NSO_VERSION="6.0"
+NSO_VERSION="6.0.1"
 TAILF_HCC_VERSION="5.0.4"
 APP_NAME="app"
 NET1_NAME="ParisNet"
