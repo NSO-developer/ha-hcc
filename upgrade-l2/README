@@ -53,8 +53,8 @@ Running the Example
    README. Change the version number NSO_VERSION and TAILF_HCC_VERSION
    variables in the setup.sh file.
    Select the Debian or the RedHat Universal Base Image (UBI) Linux
-   distribution for the paris and london nodes. The default is Debian. Change
-   the NODE12_DOCKERFILE variable in the setup.sh file to use RedHat.
+   distribution for the paris and london nodes. The default is RH UBI. Change
+   the NODE12_DOCKERFILE variable in the setup.sh file to use Debian.
    Select the NSO_ARCH in the setup.sh file. The default is x86_64.
 2. Run the setup.sh script:
     $ ./setup.sh # will follow the manager node output after setup
