@@ -168,19 +168,15 @@ hcc-fix:
 	rm -rf tailf-hcc
 
 clean:
-	-rm -rf ${NCS_LOG_DIR}/* ${NCS_RUN_DIR}/packages/* ${NCS_RUN_DIR}/backups/* ${NCS_RUN_DIR}/cdb/init.xml ${NCS_RUN_DIR}/cdb/*.cdb ${NCS_RUN_DIR}/state/* ${NCS_RUN_DIR}/streams/* ${NCS_RUN_DIR}/rollbacks/*
+	-rm -rf ${NCS_LOG_DIR}/* ${NCS_ROOT_DIR}/packages/* ${NCS_RUN_DIR}/packages/* ${NCS_RUN_DIR}/backups/* ${NCS_RUN_DIR}/cdb/init.xml ${NCS_RUN_DIR}/cdb/*.cdb ${NCS_RUN_DIR}/state/* ${NCS_RUN_DIR}/streams/* ${NCS_RUN_DIR}/rollbacks/*
 	-cp -f ${NCS_CONFIG_DIR}/ncs.conf.orig ${NCS_CONFIG_DIR}/ncs.conf
 	-cp -f ${NCS_RUN_DIR}/cdb/aaa_init.xml.orig ${NCS_RUN_DIR}/cdb/aaa_init.xml
 
 start:
-	if [ $(shell whoami) = "root" ] ; then \
-		/etc/init.d/ncs start ; \
-	else \
-		ncs --cd ${NCS_RUN_DIR} --heart -c ${NCS_CONFIG_DIR}/ncs.conf ; \
-	fi
+	ncs --cd ${NCS_RUN_DIR} --heart -c ${NCS_CONFIG_DIR}/ncs.conf
 
 stop:
-	-/etc/init.d/ncs stop
+	-ncs --stop
 
 cli:
 	ncs_cli -u admin -g ncsadmin

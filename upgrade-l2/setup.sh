@@ -13,7 +13,7 @@ NODE2_IP="192.168.23.98"
 NODE3_NAME="manager"
 NODE3_IP="192.168.23.2"
 NCS_CONFIG_DIR=/etc/ncs
-NODE12_DOCKERFILE="Dockerfile.deb" # Alt. "Dockerfile.rhubi"
+NODE12_DOCKERFILE="Dockerfile.rhubi" # Alt. "Dockerfile.deb"
 
 IMG1_NAME=$NODE1_NAME"-tailf-hcc"
 IMG2_NAME=$NODE2_NAME"-tailf-hcc"
