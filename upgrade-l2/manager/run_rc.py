@@ -71,6 +71,7 @@ def ha_upgrade_demo():
     nso_vip = os.getenv('NSO_VIP')
     nso_version = os.getenv('NSO_VERSION')
     new_nso_version = os.getenv('NEW_NSO_VERSION')
+    app_name = os.getenv('APP_NAME')
     vip_url = 'https://{}:8888/restconf'.format(nso_vip)
     node1_url = 'https://{}:8888/restconf'.format(node1_name)
     node2_url = 'https://{}:8888/restconf'.format(node2_name)
@@ -626,7 +627,7 @@ def ha_upgrade_demo():
     r = requests.post(vip_url + path, headers=headers, verify=False)
     print(r.text)
 
-    input_data = {"input": {"package-from-file": os.getcwd() +
+    input_data = {"input": {"package-from-file": "/" + app_name +
                             "/package-store/inert-1.0.tar.gz"}}
     path = '/operations/software/packages/fetch'
     print(f"{bold}POST " + vip_url + path + f"{endc}")
@@ -635,7 +636,7 @@ def ha_upgrade_demo():
                      verify=False)
     print("Status code: {}\n".format(r.status_code))
 
-    input_data = {"input": {"package-from-file": os.getcwd() +
+    input_data = {"input": {"package-from-file": "/" + app_name +
                             "/package-store/dummy-1.1.tar.gz"}}
     path = '/operations/software/packages/fetch'
     print(f"{bold}POST " + vip_url + path + f"{endc}")
