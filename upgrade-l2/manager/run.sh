@@ -25,6 +25,7 @@ function version_ge() { test "$(printf '%s\n' "$@" | sort -rV | head -n 1)" == "
 NSO55=5.5
 NSO56=5.6
 NSO60=6.0
+HCC501=5.0.1
 
 # NSO 6 use primary secondary instead of master slave
 if version_ge ${NSO_VERSION} $NSO60; then
@@ -181,8 +182,10 @@ fi
 printf "\n${PURPLE}##### Rebuild the primary ${NODE1_NAME} node packages in its package store for NSO ${NEW_NSO_VERSION}\n${NC}"
 on_primary_sh 'source $NCS_DIR/ncsrc; cd /$APP_NAME; make rebuild-packages'
 
-printf "\n${PURPLE}##### Apply a temporary privilege issue fix to the Tail-f HCC package\n${NC}"
-on_primary_sh 'cd /$APP_NAME; make HCC_TARBALL_NAME="ncs-${NEW_NSO_VERSION}-tailf-hcc-${NEW_HCC_VERSION}.tar.gz" hcc-fix'
+if version_lt ${NEW_HCC_VERSION} $HCC501; then
+    printf "\n${PURPLE}##### Apply a temporary privilege issue fix to the Tail-f HCC package\n${NC}"
+    on_primary_sh 'cd /$APP_NAME; make HCC_TARBALL_NAME="ncs-${NEW_NSO_VERSION}-tailf-hcc-${NEW_HCC_VERSION}.tar.gz" hcc-fix'
+fi
 
 printf "\n${PURPLE}##### Replace the currently installed packages on the ${NODE1_NAME} node with the ones built for NSO ${NEW_NSO_VERSION}\n${NC}"
 on_primary_sh 'rm $NCS_RUN_DIR/packages/* ; cp /$APP_NAME/package-store/dummy-1.0.tar.gz $NCS_RUN_DIR/packages ; cp /$APP_NAME/package-store/ncs-$NEW_NSO_VERSION-tailf-hcc-$NEW_HCC_VERSION.tar.gz $NCS_RUN_DIR/packages'
@@ -207,8 +210,10 @@ on_node ${NODE1_NAME} "high-availability enable; software packages list; show pa
 printf "\n${PURPLE}##### Rebuild the secondary ${NODE2_NAME} node packages in its package store for NSO ${NEW_NSO_VERSION}\n${NC}"
 on_node_sh ${NODE2_NAME} 'source $NCS_DIR/ncsrc; cd /$APP_NAME; make rebuild-packages'
 
-printf "\n${PURPLE}##### Apply a temporary privilege issue fix to the Tail-f HCC package\n${NC}"
-on_node_sh ${NODE2_NAME} 'cd /$APP_NAME; make HCC_TARBALL_NAME="ncs-${NEW_NSO_VERSION}-tailf-hcc-${NEW_HCC_VERSION}.tar.gz" hcc-fix'
+if version_lt ${NEW_HCC_VERSION} $HCC501; then
+    printf "\n${PURPLE}##### Apply a temporary privilege issue fix to the Tail-f HCC package\n${NC}"
+    on_node_sh ${NODE2_NAME} 'cd /$APP_NAME; make HCC_TARBALL_NAME="ncs-${NEW_NSO_VERSION}-tailf-hcc-${NEW_HCC_VERSION}.tar.gz" hcc-fix'
+fi
 
 printf "\n${PURPLE}##### Replace the currently installed packages on the ${NODE2_NAME} node with the ones built for NSO ${NEW_NSO_VERSION}\n${NC}"
 on_node_sh ${NODE2_NAME} 'rm $NCS_RUN_DIR/packages/* ; cp /$APP_NAME/package-store/dummy-1.0.tar.gz $NCS_RUN_DIR/packages ; cp /$APP_NAME/package-store/ncs-$NEW_NSO_VERSION-tailf-hcc-$NEW_HCC_VERSION.tar.gz $NCS_RUN_DIR/packages'
@@ -241,10 +246,7 @@ on_primary "software packages fetch package-from-file /${APP_NAME}/package-store
 on_primary "software packages list"
 on_primary "software packages install package inert-1.0; software packages install package dummy-1.1 replace-existing"
 on_primary "software packages list"
-LID=$(on_primary "devices commit-queue add-lock sync")
-LOCK_ID="${LID##* }"
-on_primary "packages ha sync and-reload"
-on_primary "devices commit-queue queue-item $LOCK_ID unlock"
+on_primary "packages ha sync and-reload { wait-commit-queue-empty }"
 
 printf "\n\n${PURPLE}##### Add some new config through the primary ${NODE1_NAME} node\n${NC}"
 on_primary 'config; dummies dummy d1 description "hello world"; top; inerts inert i1 dummy 4.3.2.1; commit'

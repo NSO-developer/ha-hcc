@@ -1,6 +1,6 @@
 #!/bin/bash
-NSO_VERSION="6.0.1"
-TAILF_HCC_VERSION="5.0.4"
+NSO_VERSION="6.2"
+TAILF_HCC_VERSION="6.0.1"
 APP_NAME="app"
 NET1_NAME="ParisNet"
 NET2_NAME="LondonNet"
@@ -22,6 +22,7 @@ IMG3_NAME=$NODE3_NAME"-tailf-hcc"
 SUBNET1=192.168.31.0/24
 SUBNET2=192.168.30.0/24
 NSO_VIP=192.168.23.122
+NSO_VIP_NAME="my-node.com"
 
 if [ -f nso-$NSO_VERSION.linux.x86_64.installer.bin ]
 then
@@ -123,7 +124,7 @@ docker network create --subnet $SUBNET1 $NET1_NAME
 docker network create --subnet $SUBNET2 $NET2_NAME
 
 echo "Run the $NODE3_NAME container"
-N3_CID="$(docker run --hostname $NODE3_NAME --cap-add NET_ADMIN --cap-add NET_BROADCAST --cap-add SYS_ADMIN --name $NODE3_NAME -d --rm -p 12024:12024 -e NSO_VIP=$NSO_VIP -e NODE3_NAME=$NODE3_NAME -e NODE1_IP=$NODE1_IP -e NODE2_IP=$NODE2_IP -e NODE1_AS=$NODE1_AS -e NODE2_AS=$NODE2_AS -e NODE3_AS=$NODE3_AS -e SUBNET1=$SUBNET1 -e SUBNET2=$SUBNET2 $IMG3_NAME | cut -c1-12)"
+N3_CID="$(docker run --hostname $NODE3_NAME --cap-add NET_ADMIN --cap-add NET_BROADCAST --cap-add SYS_ADMIN --name $NODE3_NAME -d --rm -p 12024:12024 -e NSO_VIP=$NSO_VIP -e NSO_VIP_NAME=$NSO_VIP_NAME -e NODE3_NAME=$NODE3_NAME -e NODE1_IP=$NODE1_IP -e NODE2_IP=$NODE2_IP -e NODE1_AS=$NODE1_AS -e NODE2_AS=$NODE2_AS -e NODE3_AS=$NODE3_AS -e SUBNET1=$SUBNET1 -e SUBNET2=$SUBNET2 $IMG3_NAME | cut -c1-12)"
 
 docker network connect --ip $NODE1_GW $NET1_NAME $NODE3_NAME
 docker network connect --ip $NODE2_GW $NET2_NAME $NODE3_NAME
@@ -136,7 +137,7 @@ done
 NODE3_IP=$(docker inspect router --format='{{.NetworkSettings.Networks.bridge.IPAddress}}')
 
 echo "Run the $NODE2_NAME container"
-N2_CID="$(docker run --hostname $NODE2_NAME --cap-add NET_ADMIN --net $NET2_NAME --ip $NODE2_IP --name $NODE2_NAME -d --rm -e NSO_VIP=$NSO_VIP -e NODE1_NAME=$NODE1_NAME -e NODE2_NAME=$NODE2_NAME -e NODE3_NAME=$NODE3_NAME -e NODE1_IP=$NODE1_IP -e NODE2_IP=$NODE2_IP -e NODE3_IP=$NODE3_IP -e NODE1_AS=$NODE1_AS -e NODE2_AS=$NODE2_AS -e NODE3_AS=$NODE3_AS -e NODE1_GW=$NODE1_GW -e NODE2_GW=$NODE2_GW -e SUBNET1=$SUBNET1 -e SUBNET2=$SUBNET2 -e NSO_VERSION=$NSO_VERSION $IMG2_NAME | cut -c1-12)"
+N2_CID="$(docker run --hostname $NODE2_NAME --cap-add NET_ADMIN --net $NET2_NAME --ip $NODE2_IP --name $NODE2_NAME -d --rm -e NSO_VIP=$NSO_VIP -e NSO_VIP_NAME=$NSO_VIP_NAME -e NODE1_NAME=$NODE1_NAME -e NODE2_NAME=$NODE2_NAME -e NODE3_NAME=$NODE3_NAME -e NODE1_IP=$NODE1_IP -e NODE2_IP=$NODE2_IP -e NODE3_IP=$NODE3_IP -e NODE1_AS=$NODE1_AS -e NODE2_AS=$NODE2_AS -e NODE3_AS=$NODE3_AS -e NODE1_GW=$NODE1_GW -e NODE2_GW=$NODE2_GW -e SUBNET1=$SUBNET1 -e SUBNET2=$SUBNET2 -e NSO_VERSION=$NSO_VERSION $IMG2_NAME | cut -c1-12)"
 
 while [[ $(docker ps -l -a -q -f status=running | grep $N2_CID) != $N2_CID ]]; do
     echo "Waiting for $NODE2_NAME..."
@@ -151,7 +152,7 @@ while [ $ecode -ne 0 ]; do
 done
 
 echo "Run the $NODE1_NAME container"
-N1_CID="$(docker run --hostname $NODE1_NAME --cap-add NET_ADMIN --net $NET1_NAME --ip $NODE1_IP --name $NODE1_NAME -d --rm -e NSO_VIP=$NSO_VIP -e NODE1_NAME=$NODE1_NAME -e NODE2_NAME=$NODE2_NAME -e NODE3_NAME=$NODE3_NAME -e NODE1_IP=$NODE1_IP -e NODE2_IP=$NODE2_IP -e NODE3_IP=$NODE3_IP -e NODE1_AS=$NODE1_AS -e NODE2_AS=$NODE2_AS -e NODE3_AS=$NODE3_AS -e NODE1_GW=$NODE1_GW -e NODE2_GW=$NODE2_GW -e SUBNET1=$SUBNET1 -e SUBNET2=$SUBNET2 -e NSO_VERSION=$NSO_VERSION $IMG1_NAME | cut -c1-12)"
+N1_CID="$(docker run --hostname $NODE1_NAME --cap-add NET_ADMIN --net $NET1_NAME --ip $NODE1_IP --name $NODE1_NAME -d --rm -e NSO_VIP=$NSO_VIP -e NSO_VIP_NAME=$NSO_VIP_NAME -e NODE1_NAME=$NODE1_NAME -e NODE2_NAME=$NODE2_NAME -e NODE3_NAME=$NODE3_NAME -e NODE1_IP=$NODE1_IP -e NODE2_IP=$NODE2_IP -e NODE3_IP=$NODE3_IP -e NODE1_AS=$NODE1_AS -e NODE2_AS=$NODE2_AS -e NODE3_AS=$NODE3_AS -e NODE1_GW=$NODE1_GW -e NODE2_GW=$NODE2_GW -e SUBNET1=$SUBNET1 -e SUBNET2=$SUBNET2 -e NSO_VERSION=$NSO_VERSION $IMG1_NAME | cut -c1-12)"
 
 while [[ $(docker ps -l -a -q -f status=running | grep $N1_CID) != $N1_CID ]]; do
     echo "Waiting for $NODE1_NAME..."

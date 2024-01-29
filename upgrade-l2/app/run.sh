@@ -7,8 +7,10 @@ GREEN='\033[0;32m'
 PURPLE='\033[0;35m'
 NC='\033[0m' # No Color
 
+function version_lt() { test "$(printf '%s\n' "$@" | sort -rV | head -n 1)" != "$1"; }
 function version_ge() { test "$(printf '%s\n' "$@" | sort -rV | head -n 1)" == "$1"; }
 NSO60=6.0
+HCC501=5.0.1
 
 # NSO 6 use primary secondary instead of master slave
 if version_ge ${NSO_VERSION} $NSO60; then
@@ -57,20 +59,20 @@ printf "\n${PURPLE}##### Start the SSH and rsyslog daemons\n${NC}"
 /usr/sbin/sshd
 /usr/sbin/rsyslogd
 
-NODE_NAME=$(uname -n)
-
 while [[ ( $(wc -l /home/admin/.ssh/authorized_keys) < 1 ) ]]; do
   echo "Waiting for authorized keys, host keys, and HA token to be configured on all nodes in the HA group by the manager"
   sleep 1
 done
 
-printf "\n${PURPLE}##### Apply a temporary privilege issue fix to the Tail-f HCC package\n${NC}"
-make HCC_TARBALL_NAME="ncs-${NSO_VERSION}-tailf-hcc-${HCC_VERSION}.tar.gz" hcc-fix
+if version_lt ${HCC_VERSION} $HCC501; then
+  printf "\n${PURPLE}##### Apply a privilege issue fix to the Tail-f HCC package\n${NC}"
+  make HCC_TARBALL_NAME="ncs-${NSO_VERSION}-tailf-hcc-${HCC_VERSION}.tar.gz" hcc-fix
+fi
 
 printf "\n${PURPLE}##### Reset, setup, start NSO, and enable HA assuming start-up settings\n${NC}"
 make stop &> /dev/null
 make clean
-runuser -m -u admin -g ncsadmin -- make -C /${APP_NAME} NODE_IP=${NODE_IP} HA_TOKEN=$(head -n 1 /home/admin/ha_token) PRIMARY=$PRIMARY SECONDARY=$SECONDARY all
+runuser -m -u admin -g ncsadmin -- make -C /${APP_NAME} NSO_VIP_NAME=${NSO_VIP_NAME} NODE_IP=${NODE_IP} HA_TOKEN=$(head -n 1 /home/admin/ha_token) PRIMARY=$PRIMARY SECONDARY=$SECONDARY all
 cp package-store/dummy-1.0.tar.gz ${NCS_RUN_DIR}/packages
 cp package-store/ncs-${NSO_VERSION}-tailf-hcc-${HCC_VERSION}.tar.gz ${NCS_RUN_DIR}/packages
 runuser -m -u admin -g ncsadmin -- make start

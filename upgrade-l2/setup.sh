@@ -1,9 +1,9 @@
 #!/bin/bash
 NSO_ARCH="x86_64"
-NSO_VERSION="5.8.6"
-NEW_NSO_VERSION="6.0.1"
-HCC_VERSION="5.0.3"
-NEW_HCC_VERSION="5.0.4"
+NSO_VERSION="6.1.5"
+NEW_NSO_VERSION="6.1.6"
+HCC_VERSION="6.0.1"
+NEW_HCC_VERSION="6.0.1"
 APP_NAME="app"
 NET1_NAME="ParisLondonNet"
 NODE1_NAME="paris"
@@ -21,6 +21,7 @@ IMG3_NAME=$NODE3_NAME"-tailf-hcc"
 
 SUBNET1=192.168.23.0/24
 NSO_VIP=192.168.23.122
+NSO_VIP_NAME="my-node.com"
 
 if [ -f nso-$NSO_VERSION.linux.$NSO_ARCH.installer.bin ] && [ -f nso-$NEW_NSO_VERSION.linux.$NSO_ARCH.installer.bin ]
 then
@@ -115,7 +116,7 @@ docker build -t $IMG3_NAME --build-arg NSO_ARCH=$NSO_ARCH --build-arg NEW_NSO_VE
 docker network create --subnet=$SUBNET1 $NET1_NAME
 
 echo "Run the $NODE3_NAME container"
-N3_CID="$(docker run --hostname $NODE3_NAME --cap-add NET_ADMIN --net $NET1_NAME --ip $NODE3_IP --name $NODE3_NAME -d --rm -p 18888:18888 -e NSO_VIP=$NSO_VIP -e NODE1_NAME=$NODE1_NAME -e NODE2_NAME=$NODE2_NAME -e NSO_VERSION=$NSO_VERSION -e HCC_VERSION=$HCC_VERSION $IMG3_NAME | cut -c1-12)"
+N3_CID="$(docker run --hostname $NODE3_NAME --cap-add NET_ADMIN --net $NET1_NAME --ip $NODE3_IP --name $NODE3_NAME -d --rm -p 18888:18888 -e NSO_VIP=$NSO_VIP -e NSO_VIP_NAME=$NSO_VIP_NAME -e NODE1_NAME=$NODE1_NAME -e NODE2_NAME=$NODE2_NAME -e NODE1_IP=$NODE1_IP -e NODE2_IP=$NODE2_IP -e NSO_VERSION=$NSO_VERSION -e HCC_VERSION=$HCC_VERSION $IMG3_NAME | cut -c1-12)"
 
 while [[ $(docker ps -l -a -q -f status=running | grep $N3_CID) != $N3_CID ]]; do
     echo "waiting..."
@@ -123,7 +124,7 @@ while [[ $(docker ps -l -a -q -f status=running | grep $N3_CID) != $N3_CID ]]; d
 done
 
 echo "Run the $NODE2_NAME container"
-N2_CID="$(docker run --hostname $NODE2_NAME --cap-add NET_ADMIN --net $NET1_NAME --ip $NODE2_IP --name $NODE2_NAME -d --rm -e NSO_VIP=$NSO_VIP -e NODE1_NAME=$NODE1_NAME -e NODE2_NAME=$NODE2_NAME -e NODE_IP=$NODE2_IP -e NODE1_IP=$NODE1_IP -e NODE2_IP=$NODE2_IP -e NEW_NSO_VERSION=$NEW_NSO_VERSION -e NEW_HCC_VERSION=$NEW_HCC_VERSION $IMG2_NAME | cut -c1-12)"
+N2_CID="$(docker run --hostname $NODE2_NAME --cap-add NET_ADMIN --net $NET1_NAME --ip $NODE2_IP --name $NODE2_NAME -d --rm -e NSO_VIP=$NSO_VIP -e NSO_VIP_NAME=$NSO_VIP_NAME -e NODE1_NAME=$NODE1_NAME -e NODE2_NAME=$NODE2_NAME -e NODE_IP=$NODE2_IP -e NODE1_IP=$NODE1_IP -e NODE2_IP=$NODE2_IP -e NEW_NSO_VERSION=$NEW_NSO_VERSION -e NEW_HCC_VERSION=$NEW_HCC_VERSION $IMG2_NAME | cut -c1-12)"
 
 while [[ $(docker ps -l -a -q -f status=running | grep $N2_CID) != $N2_CID ]]; do
     echo "waiting..."
@@ -131,7 +132,7 @@ while [[ $(docker ps -l -a -q -f status=running | grep $N2_CID) != $N2_CID ]]; d
 done
 
 echo "Run the $NODE1_NAME container"
-N1_CID="$(docker run --hostname $NODE1_NAME --cap-add NET_ADMIN --net $NET1_NAME --ip $NODE1_IP --name $NODE1_NAME -d --rm -e NSO_VIP=$NSO_VIP -e NODE1_NAME=$NODE1_NAME -e NODE2_NAME=$NODE2_NAME -e NODE_IP=$NODE1_IP -e NODE1_IP=$NODE1_IP -e NODE2_IP=$NODE2_IP -e NEW_NSO_VERSION=$NEW_NSO_VERSION -e NEW_HCC_VERSION=$NEW_HCC_VERSION $IMG1_NAME | cut -c1-12)"
+N1_CID="$(docker run --hostname $NODE1_NAME --cap-add NET_ADMIN --net $NET1_NAME --ip $NODE1_IP --name $NODE1_NAME -d --rm -e NSO_VIP=$NSO_VIP -e NSO_VIP_NAME=$NSO_VIP_NAME -e NODE1_NAME=$NODE1_NAME -e NODE2_NAME=$NODE2_NAME -e NODE_IP=$NODE1_IP -e NODE1_IP=$NODE1_IP -e NODE2_IP=$NODE2_IP -e NEW_NSO_VERSION=$NEW_NSO_VERSION -e NEW_HCC_VERSION=$NEW_HCC_VERSION $IMG1_NAME | cut -c1-12)"
 
 while [[ $(docker ps -l -a -q -f status=running | grep $N1_CID) != $N1_CID ]]; do
     echo "waiting..."

@@ -88,9 +88,14 @@ all: packages ha_init
 \ \ \ \ \ \ \ \ <enabled>true</enabled>\
 \ \ \ \ \ \ </syslog>\
 \ \ \ \ </webui-access-log>|' \
+			                -e "s|</webui>|\ \ <server-name>${NSO_VIP_NAME}</server-name>\n\
+\ \ \ \ <match-host-name>true</match-host-name>\n\
+\ \ </webui>|" \
 							-e 's|@ncs|@nso-\\\H|g' \
 							-e '/<ssh>/!b;n;c<enabled>true</enabled>' \
 							${NCS_CONFIG_DIR}/ncs.conf ; \
+	sed -i.bak -e '/<!--   <ssl> -->/ d' \
+	                     ${NCS_CONFIG_DIR}/ncs.conf ; \
 	sed -i.bak -e '/<ssl>/!b;n;c<enabled>true</enabled>' \
 						 ${NCS_CONFIG_DIR}/ncs.conf ; \
 	sed -i.bak -e '/<cgi>/!b;n;c<enabled>false</enabled>' \

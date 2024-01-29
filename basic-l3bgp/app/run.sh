@@ -10,8 +10,10 @@ NC='\033[0m' # No Color
 
 NODE_NAME="$(uname -n)"
 
+function version_lt() { test "$(printf '%s\n' "$@" | sort -rV | head -n 1)" != "$1"; }
 function version_ge() { test "$(printf '%s\n' "$@" | sort -rV | head -n 1)" == "$1"; }
 NSO60=6.0
+HCC501=5.0.1
 
 # NSO 6 use primary secondary instead of master slave
 if version_ge ${NSO_VERSION} $NSO60; then
@@ -39,8 +41,10 @@ else # NODE_NAME = NODE2_NAME
   sudo ip route add default via $NODE2_GW dev eth0
 fi
 
-printf "\n${PURPLE}##### Apply a temporary privilege issue fix to the Tail-f HCC package\n${NC}"
-make HCC_TARBALL_NAME="ncs-${NSO_VERSION}-tailf-hcc-${TAILF_HCC_VERSION}.tar.gz" hcc-fix
+if version_lt ${TAILF_HCC_VERSION} $HCC501; then
+    printf "\n${PURPLE}##### Apply a temporary privilege issue fix to the Tail-f HCC package\n${NC}"
+    make HCC_TARBALL_NAME="ncs-${NSO_VERSION}-tailf-hcc-${TAILF_HCC_VERSION}.tar.gz" hcc-fix
+fi
 
 printf "\n${PURPLE}##### Reset, setup, start, and enable HA assuming start-up settings\n${NC}"
 make stop &> /dev/null

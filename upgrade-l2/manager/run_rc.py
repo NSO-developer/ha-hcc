@@ -49,9 +49,9 @@ def on_node_sh(host, username, cmd):
     return output
 
 
-def wait_alarm(node_path, node_key, q):
+def wait_alarm(node_path, node_key, q, nso_vip_name):
     headers_stream = {'Content-Type': 'text/event-stream',
-                      'X-Auth-Token': node_key }
+                      'X-Auth-Token': node_key, 'Host': nso_vip_name}
 
     requests.packages.urllib3.disable_warnings(
         requests.packages.urllib3.exceptions.InsecureRequestWarning)
@@ -66,15 +66,18 @@ def wait_alarm(node_path, node_key, q):
 def ha_upgrade_demo():
     """Run the HA upgrade demo"""
 
+    node1_ip = os.getenv('NODE1_IP')
+    node2_ip = os.getenv('NODE2_IP')
     node1_name = os.getenv('NODE1_NAME')
     node2_name = os.getenv('NODE2_NAME')
     nso_vip = os.getenv('NSO_VIP')
+    nso_vip_name = os.getenv('NSO_VIP_NAME')
     nso_version = os.getenv('NSO_VERSION')
     new_nso_version = os.getenv('NEW_NSO_VERSION')
     app_name = os.getenv('APP_NAME')
     vip_url = 'https://{}:8888/restconf'.format(nso_vip)
-    node1_url = 'https://{}:8888/restconf'.format(node1_name)
-    node2_url = 'https://{}:8888/restconf'.format(node2_name)
+    node1_url = 'https://{}:8888/restconf'.format(node1_ip)
+    node2_url = 'https://{}:8888/restconf'.format(node2_ip)
     header = '\033[95m'
     okblue = '\033[94m'
     okgreen = '\033[92m'
@@ -106,8 +109,9 @@ def ha_upgrade_demo():
                'ln -s $NCS_ROOT_DIR/ncs-$NSO_VERSION $NCS_DIR;'
                'source $NCS_DIR/ncsrc;'
                'cd /$APP_NAME;'
-               'make stop clean NODE_IP=$NODE_IP PRIMARY=' + primary +
-               ' SECONDARY=' + secondary + ' all;'
+               'make stop clean NSO_VIP_NAME=' + nso_vip_name +
+               ' NODE_IP=$NODE_IP PRIMARY=' + primary + ' SECONDARY=' +
+               secondary + ' all;'
                'cp package-store/dummy-1.0.tar.gz $NCS_RUN_DIR/packages;'
                'cp package-store/token-1.0.tar.gz $NCS_RUN_DIR/packages;'
                'cp package-store/ncs-$NSO_VERSION-tailf-hcc-$HCC_VERSION.tar.gz'
@@ -120,8 +124,9 @@ def ha_upgrade_demo():
                'ln -s $NCS_ROOT_DIR/ncs-$NSO_VERSION $NCS_DIR;'
                'source $NCS_DIR/ncsrc;'
                'cd /$APP_NAME;'
-               'make stop clean NODE_IP=$NODE_IP PRIMARY=' + primary +
-               ' SECONDARY=' + secondary + ' all;'
+               'make stop clean NSO_VIP_NAME=' + nso_vip_name +
+               ' NODE_IP=$NODE_IP PRIMARY=' + primary + ' SECONDARY=' +
+               secondary + ' all;'
                'cp package-store/dummy-1.0.tar.gz $NCS_RUN_DIR/packages;'
                'cp package-store/token-1.0.tar.gz $NCS_RUN_DIR/packages;'
                'cp package-store/ncs-$NSO_VERSION-tailf-hcc-$HCC_VERSION.tar.gz'
@@ -134,7 +139,7 @@ def ha_upgrade_demo():
     requests.packages.urllib3.disable_warnings(
         requests.packages.urllib3.exceptions.InsecureRequestWarning)
     headers = {'Content-Type': 'application/yang-data+json',
-                     'X-Auth-Token': node1_key }
+                     'X-Auth-Token': node1_key, 'Host': nso_vip_name}
 
     print(f"{okblue}##### Enable HA\n{endc}")
     path = '/operations/high-availability/enable'
@@ -227,7 +232,8 @@ def ha_upgrade_demo():
     mp.set_start_method('spawn')
     q = mp.Queue()
     path = node1_url + '/streams/ncs-alarms/json'
-    alarm_process = mp.Process(target=wait_alarm, args=(path, node1_key, q))
+    alarm_process = mp.Process(target=wait_alarm, args=(path, node1_key, q,
+                                                        nso_vip_name))
     alarm_process.start()
 
     while True:
