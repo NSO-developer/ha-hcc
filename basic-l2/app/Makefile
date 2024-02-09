@@ -41,7 +41,7 @@ all:
 	           -e "s|<ha>.*</ha>||"\
 			   -e "s|</ncs-config>|<ha><enabled>true</enabled><ip>0.0.0.0</ip></ha></ncs-config>|"\
 			   -e "s|</cli>|<style>c</style></cli>|"\
-			   -e "s|</webui>|\ \ <server-name>localhost</server-name>\n\
+			   -e "s|</webui>|\ \ <server-name>${NSO_VIP_NAME}</server-name>\n\
 \ \ \ \ <match-host-name>true</match-host-name>\n\
 \ \ </webui>|" \
 			   -e '/<ssh>/!b;n;c<enabled>true</enabled>'\
