@@ -1,0 +1,110 @@
+version: '1.0'
+volumes:
+  NSO1-vol:
+  NSO2-vol:
+  NSO3-vol:
+  NSO1-log-vol:
+  NSO2-log-vol:
+  NSO3-log-vol:
+
+networks:
+  NSO-net:
+    ipam:
+      config:
+        - subnet: ${SUBNET}
+          gateway: ${GATEWAY}
+
+services:
+  NODE-1:
+    container_name: ${NODE1}
+    hostname: ${NODE1}
+    networks:
+      NSO-net:
+        ipv4_address: ${NODE1_IP}
+    extends:
+      file: common-services.yml
+      service: NSO
+    profiles:
+      - nso
+    volumes:
+      - type: volume
+        source: NSO1-vol
+        target: /nso
+      - type: volume
+        source: NSO1-log-vol
+        target: /log
+
+  NODE-2:
+    container_name: ${NODE2}
+    hostname: ${NODE2}
+    networks:
+      NSO-net:
+        ipv4_address: ${NODE2_IP}
+    extends:
+      file: common-services.yml
+      service: NSO
+    profiles:
+      - nso
+    volumes:
+      - type: volume
+        source: NSO2-vol
+        target: /nso
+      - type: volume
+        source: NSO2-log-vol
+        target: /log
+
+  NODE-3:
+    container_name: ${NODE3}
+    hostname: ${NODE3}
+    networks:
+      NSO-net:
+        ipv4_address: ${NODE3_IP}
+    extends:
+      file: common-services.yml
+      service: NSO
+    profiles:
+      - nso
+    volumes:
+      - type: volume
+        source: NSO3-vol
+        target: /nso
+      - type: volume
+        source: NSO3-log-vol
+        target: /log
+
+  MANAGER:
+    image: manager-raft-hcc-l2
+    env_file:
+      - .env
+    networks:
+      NSO-net:
+        ipv4_address: ${MANAGER_IP}
+    build:
+      context: .
+      dockerfile: manager.Dockerfile
+    container_name: manager
+    profiles:
+      - manager
+    command: sh -c "/root/raft-etc/demo_setup.sh
+                    && tail -f /dev/null"
+    volumes:
+      - type: volume
+        source: NSO1-vol
+        target: /${NODE1}
+      - type: volume
+        source: NSO2-vol
+        target: /${NODE2}
+      - type: volume
+        source: NSO3-vol
+        target: /${NODE3}
+      - type: bind
+        source: ./raft-etc
+        target: /root/raft-etc
+        read_only: true
+    healthcheck:
+      test: test -f /$NODE3/etc/ncs.crypto_keys
+      interval: 10s
+      retries: 10
+      start_period: 10s
+      timeout: 10s
+

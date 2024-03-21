@@ -1,4 +1,5 @@
 # Tail-f HCC Package Examples
 
-This repository contains variants of simple Tail-f HCC package implementations as a reference.
-See subfolder READMEs for details on each demo. 
+This repository contains variants of Tail-f HCC package HA examples as
+a reference in support of the NSO documentation. See the subfolder READMEs for
+details on each example.

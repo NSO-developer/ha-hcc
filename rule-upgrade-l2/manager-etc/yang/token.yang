@@ -1,0 +1,25 @@
+module token {
+  namespace "http://com/example/token";
+  prefix token;
+
+  import tailf-common {
+    prefix tailf;
+  }
+  tailf:export "maapi";
+
+  container tokens {
+    tailf:cdb-oper {
+      tailf:persistent true;
+    }
+    config false;
+    list token {
+      key "name";
+      leaf name {
+        type string;
+      }
+      leaf token {
+        type string;
+      }
+    }
+  }
+}

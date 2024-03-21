@@ -1,0 +1,20 @@
+  services:
+    NODE:
+      image: node-raft-hcc-l3
+      environment:
+        - EXTRA_ARGS=--heart
+        - ADMIN_USERNAME=admin
+      restart: unless-stopped
+      build:
+        context: .
+        args:
+          NSO_VERSION: ${NSO_VERSION}
+        dockerfile: Dockerfile
+      cap_add:
+        - NET_ADMIN
+      healthcheck:
+        test: ncs_cmd -c "wait-start 2"
+        interval: 10s
+        retries: 10
+        start_period: 10s
+        timeout: 10s

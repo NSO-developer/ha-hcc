@@ -1,0 +1,30 @@
+  services:
+    NODE:
+      image: node-rule-hcc-upgrade
+      env_file:
+        - .env
+      environment:
+        - PATH=/opt/ncs/current/bin:/opt/ncs/current/lib/ncs/bin:$PATH
+        - PYTHONPATH=/opt/ncs/current/src/ncs/pyapi
+        - LD_LIBRARY_PATH=/opt/ncs/current/lib
+        - HOME=/home/admin # The NSO installer will put the .erlang.cookie under $HOME/
+      restart: unless-stopped
+      build:
+        context: .
+        args:
+          NSO_VERSION: ${NSO_VERSION}
+          NSO_ARCH: ${NSO_ARCH}
+          NCS_RUN_DIR: ${NCS_RUN_DIR}
+          NCS_CONFIG_DIR: ${NCS_CONFIG_DIR}
+          NCS_LOG_DIR: ${NCS_LOG_DIR}
+          NCS_ROOT_DIR: ${NCS_ROOT_DIR}
+        dockerfile: Dockerfile
+      command: /home/admin/node-etc/node_setup.sh
+      cap_add:
+        - NET_ADMIN
+      healthcheck:
+        test: ncs_cmd -c "wait-start 2"
+        interval: 10s
+        retries: 3
+        start_period: 10s
+        timeout: 300s
