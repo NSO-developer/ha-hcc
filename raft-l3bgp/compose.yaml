@@ -1,0 +1,154 @@
+version: '1.0'
+volumes:
+  NSO1-vol:
+  NSO2-vol:
+  NSO3-vol:
+  NSO1-log-vol:
+  NSO2-log-vol:
+  NSO3-log-vol:
+
+networks:
+  node1-net:
+    name: ${NET1}
+    ipam:
+      config:
+        - subnet: ${SUBNET1}
+  node2-net:
+    name: ${NET2}
+    ipam:
+      config:
+        - subnet: ${SUBNET2}
+  node3-net:
+    name: ${NET3}
+    ipam:
+      config:
+        - subnet: ${SUBNET3}
+
+services:
+  NODE-1:
+    container_name: ${NODE1}
+    hostname: ${NODE1}
+    extra_hosts:
+      - "${NODE2}:${NODE2_IP}"
+      - "${NODE3}:${NODE3_IP}"
+    networks:
+      node1-net:
+        ipv4_address: ${NODE1_IP}
+    extends:
+      file: common-services.yml
+      service: NODE
+    profiles:
+      - nso
+    volumes:
+      - type: volume
+        source: NSO1-vol
+        target: /nso
+      - type: volume
+        source: NSO1-log-vol
+        target: /log
+    command: sh -c 'cp /nso/authorized_keys /home/admin/.ssh/
+              && cp -r /nso/etc/dist /etc/ncs/
+              && /usr/sbin/sshd
+              && /usr/sbin/rsyslogd
+              && ncs-make-package --service-skeleton template --dest /nso/run/packages/dummy-1.0 --build --no-test --root-container dummies dummy
+              && sudo ip route delete default && sudo ip route add default via ${NODE1_GW} dev eth0
+              && /run-nso.sh'
+
+  NODE-2:
+    container_name: ${NODE2}
+    hostname: ${NODE2}
+    extra_hosts:
+      - "${NODE1}:${NODE1_IP}"
+      - "${NODE3}:${NODE3_IP}"
+    networks:
+      node2-net:
+        ipv4_address: ${NODE2_IP}
+    extends:
+      file: common-services.yml
+      service: NODE
+    profiles:
+      - nso
+    volumes:
+      - type: volume
+        source: NSO2-vol
+        target: /nso
+      - type: volume
+        source: NSO2-log-vol
+        target: /log
+    command: sh -c 'cp /nso/authorized_keys /home/admin/.ssh/
+              && cp -r /nso/etc/dist /etc/ncs/
+              && /usr/sbin/sshd
+              && /usr/sbin/rsyslogd
+              && ncs-make-package --service-skeleton template --dest /nso/run/packages/dummy-1.0 --build --no-test --root-container dummies dummy
+              && sudo ip route delete default && sudo ip route add default via ${NODE2_GW} dev eth0
+              && /run-nso.sh'
+
+  NODE-3:
+    container_name: ${NODE3}
+    hostname: ${NODE3}
+    extra_hosts:
+      - "${NODE1}:${NODE1_IP}"
+      - "${NODE2}:${NODE2_IP}"
+    networks:
+      node3-net:
+        ipv4_address: ${NODE3_IP}
+    extends:
+      file: common-services.yml
+      service: NODE
+    profiles:
+      - nso
+    volumes:
+      - type: volume
+        source: NSO3-vol
+        target: /nso
+      - type: volume
+        source: NSO3-log-vol
+        target: /log
+    command: sh -c 'cp /nso/authorized_keys /home/admin/.ssh/
+              && cp -r /nso/etc/dist /etc/ncs/
+              && /usr/sbin/sshd
+              && /usr/sbin/rsyslogd
+              && ncs-make-package --service-skeleton template --dest /nso/run/packages/dummy-1.0 --build --no-test --root-container dummies dummy
+              && sudo ip route delete default && sudo ip route add default via ${NODE3_GW} dev eth0
+              && /run-nso.sh'
+
+  MANAGER:
+    image: manager-raft-hcc-l3
+    env_file:
+      - .env
+    build:
+      context: .
+      dockerfile: manager.Dockerfile
+    container_name: manager
+    hostname: manager
+    network_mode: bridge
+    ports:
+      - "12024:12024"
+    profiles:
+      - manager
+    command: sh -c "/root/raft-etc/demo_setup.sh
+                    && tail -f /dev/null"
+    cap_add:
+        - NET_ADMIN
+        - NET_BROADCAST
+        - SYS_ADMIN
+    volumes:
+      - type: volume
+        source: NSO1-vol
+        target: /${NODE1}
+      - type: volume
+        source: NSO2-vol
+        target: /${NODE2}
+      - type: volume
+        source: NSO3-vol
+        target: /${NODE3}
+      - type: bind
+        source: ./raft-etc
+        target: /root/raft-etc
+        read_only: true
+    healthcheck:
+      test: test -f /$NODE3/etc/ncs.crypto_keys
+      interval: 10s
+      retries: 10
+      start_period: 10s
+      timeout: 10s

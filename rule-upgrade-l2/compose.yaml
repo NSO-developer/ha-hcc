@@ -1,0 +1,104 @@
+version: '1.0'
+volumes:
+  etc-vol1:
+  etc-vol2:
+  run-vol1:
+  run-vol2:
+  log-vol1:
+  log-vol2:
+
+networks:
+  NSO-net:
+    ipam:
+      config:
+        - subnet: ${SUBNET}
+          gateway: ${GATEWAY}
+
+services:
+  NODE-1:
+    container_name: ${NODE1}
+    hostname: ${NODE1}
+    networks:
+      NSO-net:
+        ipv4_address: ${NODE1_IP}
+    extends:
+      file: common-services.yml
+      service: NODE
+    profiles:
+      - nso
+    volumes:
+      - type: volume
+        source: etc-vol1
+        target: /home/admin/etc
+      - type: volume
+        source: run-vol1
+        target: /var/opt/ncs
+      - type: volume
+        source: log-vol1
+        target: /var/log/ncs
+      - type: bind
+        source: ./node-etc
+        target: /home/admin/node-etc
+        read_only: true
+
+  NODE-2:
+    container_name: ${NODE2}
+    hostname: ${NODE2}
+    networks:
+      NSO-net:
+        ipv4_address: ${NODE2_IP}
+    extends:
+      file: common-services.yml
+      service: NODE
+    profiles:
+      - nso
+    volumes:
+      - type: volume
+        source: etc-vol2
+        target: /home/admin/etc
+      - type: volume
+        source: run-vol2
+        target: /var/opt/ncs
+      - type: volume
+        source: log-vol2
+        target: /var/log/ncs
+      - type: bind
+        source: ./node-etc
+        target: /home/admin/node-etc
+        read_only: true
+
+  MANAGER:
+    image: manager-rule-hcc-upgrade
+    env_file:
+      - .env
+    networks:
+      NSO-net:
+        ipv4_address: ${MANAGER_IP}
+    build:
+      context: .
+      dockerfile: manager.Dockerfile
+      args:
+        NSO_VERSION: ${NSO_VERSION}
+        NSO_ARCH: ${NSO_ARCH}
+    container_name: manager
+    profiles:
+      - manager
+    command: sh -c '/root/manager-etc/manager_setup.sh
+                    && tail -f /dev/null'
+    volumes:
+      - type: volume
+        source: etc-vol1
+        target: /${NODE1}
+      - type: volume
+        source: etc-vol2
+        target: /${NODE2}
+      - type: bind
+        source: ./manager-etc
+        target: /root/manager-etc
+        read_only: true
+    healthcheck:
+      test: test -f /${NODE2}/ncs.crypto_keys
+      interval: 10s
+      retries: 10
+      start_period: 5s
+      timeout: 10s

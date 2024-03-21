@@ -1,0 +1,25 @@
+  services:
+    NSO:
+      image: node-rule-hcc-l2
+      environment:
+        - EXTRA_ARGS=--heart
+        - ADMIN_USERNAME=admin
+      restart: "unless-stopped"
+      build:
+        context: .
+        args:
+          NSO_VERSION: ${NSO_VERSION}
+        dockerfile: Dockerfile
+      command: sh -c 'cp /nso/authorized_keys /home/admin/.ssh/
+                && /usr/sbin/sshd
+                && /usr/sbin/rsyslogd
+                && ncs-make-package --service-skeleton template --dest /nso/run/packages/dummy-1.0 --build --no-test --root-container dummies dummy
+                && /run-nso.sh'
+      cap_add:
+        - NET_ADMIN
+      healthcheck:
+        test: ncs_cmd -c "wait-start 2"
+        interval: 10s
+        retries: 10
+        start_period: 10s
+        timeout: 10s
