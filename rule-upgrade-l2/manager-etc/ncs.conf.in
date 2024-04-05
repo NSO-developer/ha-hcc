@@ -176,6 +176,17 @@
     </developer-log>
     <developer-log-level>info</developer-log-level>
 
+    <upgrade-log>
+      <enabled>true</enabled>
+      <file>
+        <name>${NCS_LOG_DIR}/upgrade.log</name>
+        <enabled>false</enabled>
+      </file>
+      <syslog>
+        <enabled>true</enabled>
+      </syslog>
+    </upgrade-log>
+
     <audit-log>
       <enabled>true</enabled>
       <file>

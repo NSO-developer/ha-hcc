@@ -37,6 +37,16 @@ env /bin/bash -o posix -c 'export -p' >> /home/admin/.bash_profile
 env | grep _ >> /home/admin/.pam_environment
 env | grep _ >> /home/admin/.ssh/environment
 
+# Allow the ncsoper user group to generate a token for RESTCONF authentication
+if [ ! -f ${NCS_RUN_DIR}/cdb/aaa_init.xml.orig ] ; then
+    sed -i.orig '/<group>ncsoper<\/group>/a\
+\ \ \ \ \ \ <rule>\
+\ \ \ \ \ \ \ \ <name>generate-token<\/name>\
+\ \ \ \ \ \ \ \ <rpc-name>generate-token<\/rpc-name>\
+\ \ \ \ \ \ \ \ <action>permit<\/action>\
+\ \ \ \ \ \ <\/rule>' ${NCS_RUN_DIR}/cdb/aaa_init.xml
+fi
+
 printf "\n${PURPLE}##### Start the SSH and rsyslog daemons\n${NC}"
 /usr/sbin/sshd
 /usr/sbin/rsyslogd
