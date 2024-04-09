@@ -6,7 +6,6 @@ RED='\033[0;31m'
 GREEN='\033[0;32m'
 PURPLE='\033[0;35m'
 NC='\033[0m' # No Color
-
 NODES=( ${NODE1} ${NODE2} ${NODE3} )
 
 printf "${GREEN}##### Manager setup\n${NC}"

@@ -27,19 +27,18 @@ echo "AESCFB128_KEY=$(gen_random 16)" >> /root/ncs.crypto_keys
 echo "AES256CFB128_KEY=$(gen_random 16)$(gen_random 16)" >> /root/ncs.crypto_keys
 
 printf "${PURPLE}##### Create the nodes host keys and copy the public key to the manager node known_hosts file\n${NC}"
-ssh-keygen -N "" -t ed25519 -m pem -f /root/ssh_host_ed25519_key
-for NODE in "${NODES[@]}" ; do
-    mkdir -p /$NODE/etc/ssh
-    cp /root/ssh_host_ed25519_key* /$NODE/etc/ssh/
-done
-HOST_KEY=$(cat /root/ssh_host_ed25519_key.pub | cut -d ' ' -f1-2)
-rm /root/ssh_host_ed25519_key*
 mkdir -p /root/.ssh
 touch /root/.ssh/known_hosts
-HOSTS=( ${NODE1} ${NODE2} ${NODE3} ${NSO_VIP} )
-for HOST in "${HOSTS[@]}" ; do
-    echo "$HOST $HOST_KEY" >> /root/.ssh/known_hosts
-    echo "[$HOST]:2024 $HOST_KEY" >> /root/.ssh/known_hosts
+for NODE in "${NODES[@]}" ; do
+    ssh-keygen -N "" -t ed25519 -m pem -f /root/ssh_host_ed25519_key
+    mkdir -p /$NODE/etc/ssh
+    cp /root/ssh_host_ed25519_key* /$NODE/etc/ssh/
+    HOST_KEY=$(cat /root/ssh_host_ed25519_key.pub | cut -d ' ' -f1-2)
+    echo "$NODE $HOST_KEY" >> /root/.ssh/known_hosts
+    echo "[$NODE]:2024 $HOST_KEY" >> /root/.ssh/known_hosts
+    echo "${NSO_VIP} $HOST_KEY" >> /root/.ssh/known_hosts
+    echo "[${NSO_VIP}]:2024 $HOST_KEY" >> /root/.ssh/known_hosts
+    rm /root/ssh_host_ed25519_key*
 done
 ssh-keygen -Hf /root/.ssh/known_hosts
 rm /root/.ssh/known_hosts.old

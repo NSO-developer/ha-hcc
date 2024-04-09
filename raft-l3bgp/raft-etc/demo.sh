@@ -10,10 +10,10 @@ NC='\033[0m' # No Color
 
 NODES=( ${NODE1} ${NODE2} ${NODE3} )
 
-function on_leader() { printf "${PURPLE}On leader CLI: ${NC}$@\n"; ssh -l admin -p 2024 -q -o StrictHostKeyChecking=no -o LogLevel=ERROR ${NSO_VIP} "$@" ; }
-function on_leader_sh() { printf "${PURPLE}On leader: ${NC}$@\n"; ssh -l admin -p 22 -q -o StrictHostKeyChecking=no -o ServerAliveInterval=1 -o ServerAliveCountMax=1 -o LogLevel=ERROR ${NSO_VIP} "$@" ; }
-function on_node() { printf "${PURPLE}On $1 CLI: ${NC}$2\n"; ssh -l admin -p 2024 -q -o StrictHostKeyChecking=no -o LogLevel=ERROR "$1" "$2" ; }
-function on_node_sh() { printf "${PURPLE}On $1: ${NC}$2\n"; ssh -l admin -p 22 -q -o StrictHostKeyChecking=no -o LogLevel=ERROR "$1" "$2" ; }
+function on_leader() { printf "${PURPLE}On leader CLI: ${NC}$@\n"; ssh -l admin -p 2024 -q -o LogLevel=ERROR ${NSO_VIP} "$@" ; }
+function on_leader_sh() { printf "${PURPLE}On leader: ${NC}$@\n"; ssh -l admin -p 22 -q -o ServerAliveInterval=1 -o ServerAliveCountMax=1 -o LogLevel=ERROR ${NSO_VIP} "$@" ; }
+function on_node() { printf "${PURPLE}On $1 CLI: ${NC}$2\n"; ssh -l admin -p 2024 -q -o LogLevel=ERROR "$1" "$2" ; }
+function on_node_sh() { printf "${PURPLE}On $1: ${NC}$2\n"; ssh -l admin -p 22 -q -o LogLevel=ERROR "$1" "$2" ; }
 
 ARRAY=$(hostname -i)
 MANAGER_IP="${ARRAY%% *}"
