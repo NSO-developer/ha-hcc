@@ -25,6 +25,7 @@ def on_node(host, cmd):
     endc = '\033[0m'
     print(f"{okblue}On " + host + f" CLI:{endc} " + cmd + "\n", flush=True)
     ssh = paramiko.SSHClient()
+    # Paramiko cannot handle multiple host keys host
     ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
     ssh.connect(host, port=2024, username="admin",
     key_filename = os.path.join(os.path.expanduser('~'), ".ssh", "id_ed25519"))
@@ -43,6 +44,7 @@ def on_node_sh(host, username, cmd):
     endc = '\033[0m'
     print(f"{okblue}On " + host + f":{endc} " + cmd + "\n", flush=True)
     ssh = paramiko.SSHClient()
+    # Paramiko cannot handle multiple host keys host
     ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
     ssh.connect(host, username=username,
     key_filename=os.path.join(os.path.expanduser('~'), ".ssh", "id_ed25519"))
