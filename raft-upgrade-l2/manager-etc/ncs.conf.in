@@ -445,9 +445,9 @@
       <node-address>NODE_NAME</node-address>
     </listen>
     <seed-nodes>
-      <!-- seed-node>SEED_NODE1</seed-node -->
-      <!-- seed-node>SEED_NODE2</seed-node -->
-      <!-- seed-node>SEED_NODE3</seed-node -->
+      <seed-node>SEED_NODE1</seed-node>
+      <seed-node>SEED_NODE2</seed-node>
+      <seed-node>SEED_NODE3</seed-node>
     </seed-nodes>
     <ssl>
       <ca-cert-file>${NCS_CONFIG_DIR}/dist/ssl/certs/ca.crt</ca-cert-file>

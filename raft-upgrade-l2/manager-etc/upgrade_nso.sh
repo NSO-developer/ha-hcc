@@ -10,7 +10,7 @@ NC='\033[0m' # No Color
 function on_leader() { printf "${PURPLE}On leader CLI: ${NC}$@\n"; ssh -l admin -p 2024 -o LogLevel=ERROR ${NSO_VIP} "$@" ; }
 function on_node() { printf "${PURPLE}On $1 CLI: ${NC}$2\n"; ssh -l admin -p 2024 -o LogLevel=ERROR "$1" "$2" ; }
 function on_node_sh() { printf "${PURPLE}On $1: ${NC}$2\n"; ssh -l admin -p 22 -o LogLevel=ERROR "$1" "$2" ; }
-function on_node_root() { printf "${PURPLE}On $1: ${NC}$2\n"; ssh -i /root/.ssh/upgrade-keys/id_ed25519 -l root -p 22 -o LogLevel=ERROR "$1" "$2" ; }
+function as_root_sh() { printf "${PURPLE}On $1: ${NC}$2\n"; ssh -i /root/.ssh/upgrade-keys/id_ed25519 -l root -p 22 -o LogLevel=ERROR "$1" "$2" ; }
 function scp_node() { printf "${PURPLE}scp from: $1 to: $2${NC}\n"; scp -o LogLevel=ERROR "$1" "$2" ; }
 
 NODES=( ${NODE1} ${NODE2} ${NODE3} )
@@ -54,15 +54,22 @@ while [ "$(on_leader 'show ha-raft status log replications state | include in-sy
 done
 
 set +e
-printf "\n${PURPLE}##### Stop the follower nodes\n${NC}"
+printf "\n${PURPLE}##### Compact the CDB write log and stop the follower nodes\n${NC}"
 for NODE in "${NODES[@]}" ; do
     if [ "$NODE" != "$CURRENT_LEADER" ] ; then
-        on_node_sh $NODE 'touch $NCS_RUN_DIR/upgrade; ${NCS_DIR}/bin/ncs --stop'
+        on_node_sh $NODE 'touch $NCS_RUN_DIR/upgrade \
+                          && rm $NCS_RUN_DIR/cdb/compact.lock \
+                          && ncs --cdb-compact $NCS_RUN_DIR/cdb \
+                          && ${NCS_DIR}/bin/ncs --stop'
     fi
 done
 
-printf "\n${PURPLE}##### Stop the leader\n${NC}"
-on_node_sh $CURRENT_LEADER 'touch $NCS_RUN_DIR/upgrade; touch $NCS_RUN_DIR/package_reload; ${NCS_DIR}/bin/ncs --stop'
+printf "\n${PURPLE}##### Compact the CDB write log and stop the leader\n${NC}"
+on_node_sh $CURRENT_LEADER 'touch $NCS_RUN_DIR/upgrade \
+                            && touch $NCS_RUN_DIR/package_reload \
+                            && rm $NCS_RUN_DIR/cdb/compact.lock \
+                            && ncs --cdb-compact $NCS_RUN_DIR/cdb \
+                            && ${NCS_DIR}/bin/ncs --stop'
 
 printf "\n${PURPLE}##### Verify that all nodes are waiting for the upgrade\n${NC}"
 for NODE in "${NODES[@]}" ; do
@@ -94,14 +101,15 @@ scp_node "/root/package-store/dummy-1.0.tar.gz" "admin@$CURRENT_LEADER:/home/adm
 
 printf "\n${PURPLE}##### Install NSO ${NEW_NSO_VERSION} on all nodes\n${NC}"
 for NODE in "${NODES[@]}" ; do
-    on_node_root $NODE "chmod u+x /tmp/nso-${NEW_NSO_VERSION}.linux.${NSO_ARCH}.installer.bin"
+    as_root_sh $NODE "chmod u+x /tmp/nso-${NEW_NSO_VERSION}.linux.${NSO_ARCH}.installer.bin"
     set +e
-    on_node_root $NODE "[ -d $NCS_ROOT_DIR/ncs-$NEW_NSO_VERSION ] && rm -rf $NCS_ROOT_DIR/ncs-$NEW_NSO_VERSION"
+    as_root_sh $NODE "[ -d $NCS_ROOT_DIR/ncs-$NEW_NSO_VERSION ] && rm -rf $NCS_ROOT_DIR/ncs-$NEW_NSO_VERSION"
     set -e
-    on_node_root $NODE "/tmp/nso-${NEW_NSO_VERSION}.linux.${NSO_ARCH}.installer.bin --system-install --run-as-user admin --non-interactive \
+    as_root_sh $NODE "/tmp/nso-${NEW_NSO_VERSION}.linux.${NSO_ARCH}.installer.bin --system-install --run-as-user admin --non-interactive \
                         && chown root $NCS_ROOT_DIR/ncs-$NEW_NSO_VERSION/lib/ncs/lib/core/confd/priv/cmdwrapper \
                         && chmod u+s $NCS_ROOT_DIR/ncs-$NEW_NSO_VERSION/lib/ncs/lib/core/confd/priv/cmdwrapper \
-                        && rm $NCS_ROOT_DIR/current; ln -s $NCS_ROOT_DIR/ncs-$NEW_NSO_VERSION $NCS_ROOT_DIR/current"
+                        && rm $NCS_ROOT_DIR/current \
+                        && ln -s $NCS_ROOT_DIR/ncs-$NEW_NSO_VERSION $NCS_ROOT_DIR/current"
 done
 
 printf "\n${PURPLE}##### Start the leader\n${NC}"

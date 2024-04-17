@@ -10,7 +10,7 @@ NC='\033[0m' # No Color
 function on_primary() { printf "${PURPLE}On primary CLI: ${NC}$@\n"; ssh -l admin -p 2024 -o LogLevel=ERROR ${NSO_VIP} "$@" ; }
 function on_node() { printf "${PURPLE}On $1 CLI: ${NC}$2\n"; ssh -l admin -p 2024 -o ServerAliveInterval=1 -o ServerAliveCountMax=3 -o LogLevel=ERROR "$1" "$2" ; }
 function on_node_sh() { printf "${PURPLE}On $1: ${NC}$2\n"; ssh -l admin -p 22 -o ServerAliveInterval=1 -o ServerAliveCountMax=3 -o LogLevel=ERROR "$1" "$2" ; }
-function on_node_root() { printf "${PURPLE}On $1: ${NC}$2\n"; ssh -i /root/.ssh/upgrade-keys/id_ed25519 -l root -p 22 -o LogLevel=ERROR "$1" "$2" ; }
+function as_root_sh() { printf "${PURPLE}On $1: ${NC}$2\n"; ssh -i /root/.ssh/upgrade-keys/id_ed25519 -l root -p 22 -o LogLevel=ERROR "$1" "$2" ; }
 function scp_node() { printf "${PURPLE}scp from: $1 to: $2${NC}\n"; scp -o LogLevel=ERROR "$1" "$2" ; }
 
 NODES=( ${NODE1} ${NODE2} )
@@ -71,20 +71,22 @@ done
 
 printf "\n${PURPLE}##### Install NSO ${NEW_NSO_VERSION} on all nodes\n${NC}"
 for NODE in "${NODES[@]}" ; do
-    on_node_root $NODE 'chmod u+x /tmp/nso-$NEW_NSO_VERSION.linux.$NSO_ARCH.installer.bin &&
-/tmp/nso-$NEW_NSO_VERSION.linux.$NSO_ARCH.installer.bin --system-install --run-as-user admin --non-interactive &&
-chown root $NCS_ROOT_DIR/ncs-$NEW_NSO_VERSION/lib/ncs/lib/core/confd/priv/cmdwrapper &&
-chmod u+s $NCS_ROOT_DIR/ncs-$NEW_NSO_VERSION/lib/ncs/lib/core/confd/priv/cmdwrapper'
+    as_root_sh $NODE 'chmod u+x /tmp/nso-$NEW_NSO_VERSION.linux.$NSO_ARCH.installer.bin \
+                      && /tmp/nso-$NEW_NSO_VERSION.linux.$NSO_ARCH.installer.bin --system-install --run-as-user admin --non-interactive \
+                      && chown root $NCS_ROOT_DIR/ncs-$NEW_NSO_VERSION/lib/ncs/lib/core/confd/priv/cmdwrapper \
+                      && chmod u+s $NCS_ROOT_DIR/ncs-$NEW_NSO_VERSION/lib/ncs/lib/core/confd/priv/cmdwrapper'
 done
 
 printf "\n${PURPLE}##### Disable primary node ${NODE1} high availability for secondary node ${NODE2} to automatically failover and assume primary role in read-only mode\n${NC}"
-on_node ${NODE1} "high-availability disable; software packages list; show packages"
+on_node ${NODE1} "high-availability disable; high-availability read-only; software packages list; show packages"
 
 set +e
-printf "\n${PURPLE}##### Upgrade the ${NODE1} node to ${NEW_NSO_VERSION}\n${NC}"
-on_node_sh ${NODE1} 'touch $NCS_RUN_DIR/upgrade &&
-touch $NCS_RUN_DIR/package_reload &&
-$NCS_DIR/bin/ncs --stop'
+printf "\n${PURPLE}##### Compact the CDB write log and upgrade the ${NODE1} node to ${NEW_NSO_VERSION}\n${NC}"
+on_node_sh ${NODE1} 'touch $NCS_RUN_DIR/upgrade \
+                     && touch $NCS_RUN_DIR/package_reload \
+                     && rm $NCS_RUN_DIR/cdb/compact.lock \
+                     && ncs --cdb-compact $NCS_RUN_DIR/cdb \
+                     && $NCS_DIR/bin/ncs --stop'
 set -e
 
 until on_node_sh ${NODE1} '[ -f $NCS_RUN_DIR/upgrade ]' ; do
@@ -93,12 +95,12 @@ until on_node_sh ${NODE1} '[ -f $NCS_RUN_DIR/upgrade ]' ; do
 done
 
 printf "\n${PURPLE}##### Replace the currently installed packages on the ${NODE1} node with the ones built for NSO ${NEW_NSO_VERSION} and switch to ${NEW_NSO_VERSION}\n${NC}"
-on_node_sh ${NODE1} 'rm $NCS_RUN_DIR/packages/* &&
-cp /home/admin/etc/package-store/dummy-1.0.tar.gz $NCS_RUN_DIR/packages &&
-cp /home/admin/etc/package-store/token-1.0.tar.gz $NCS_RUN_DIR/packages &&
-cp /home/admin/etc/package-store/tailf-hcc.tar.gz $NCS_RUN_DIR/packages &&
-rm $NCS_DIR &&
-ln -s $NCS_ROOT_DIR/ncs-$NEW_NSO_VERSION $NCS_DIR'
+on_node_sh ${NODE1} 'rm $NCS_RUN_DIR/packages/* \
+                     && cp /home/admin/etc/package-store/dummy-1.0.tar.gz $NCS_RUN_DIR/packages \
+                     && cp /home/admin/etc/package-store/token-1.0.tar.gz $NCS_RUN_DIR/packages \
+                     && cp /home/admin/etc/package-store/tailf-hcc.tar.gz $NCS_RUN_DIR/packages \
+                     && rm $NCS_DIR \
+                     && ln -s $NCS_ROOT_DIR/ncs-$NEW_NSO_VERSION $NCS_DIR'
 
 set +e
 while [[ "$(on_node ${NODE2} 'high-availability status mode')" != *"primary"* ]] ; do
@@ -126,11 +128,13 @@ on_node_sh ${NODE1} 'rm -f $NCS_RUN_DIR/package_reload'
 printf "\n${PURPLE}##### Enable high availability for the ${NODE1} node that will assume primary role\n${NC}"
 on_node ${NODE1} "high-availability enable; software packages list; show packages"
 
-printf "\n${PURPLE}##### Upgrade the ${NODE2} node to ${NEW_NSO_VERSION}\n${NC}"
+printf "\n${PURPLE}##### Compact the CDB write log and upgrade the ${NODE2} node to ${NEW_NSO_VERSION}\n${NC}"
 set +e
-on_node_sh ${NODE2} 'touch $NCS_RUN_DIR/upgrade &&
-touch $NCS_RUN_DIR/package_reload &&
-$NCS_DIR/bin/ncs --stop'
+on_node_sh ${NODE2} 'touch $NCS_RUN_DIR/upgrade \
+                     && touch $NCS_RUN_DIR/package_reload \
+                     && rm $NCS_RUN_DIR/cdb/compact.lock \
+                     && ncs --cdb-compact $NCS_RUN_DIR/cdb \
+                     && $NCS_DIR/bin/ncs --stop'
 set -e
 
 until on_node_sh ${NODE2} '[ -f $NCS_RUN_DIR/upgrade ]' ; do
@@ -139,13 +143,13 @@ until on_node_sh ${NODE2} '[ -f $NCS_RUN_DIR/upgrade ]' ; do
 done
 
 printf "\n${PURPLE}##### Replace the currently installed packages on the ${NODE2} node with the ones built for NSO ${NEW_NSO_VERSION} and switch to ${NEW_NSO_VERSION}\n${NC}"
-on_node_sh ${NODE2} 'rm $NCS_RUN_DIR/packages/* &&
-cp /home/admin/etc/package-store/dummy-1.0.tar.gz $NCS_RUN_DIR/packages &&
-cp /home/admin/etc/package-store/token-1.0.tar.gz $NCS_RUN_DIR/packages &&
-cp /home/admin/etc/package-store/tailf-hcc.tar.gz $NCS_RUN_DIR/packages &&
-rm $NCS_DIR &&
-ln -s $NCS_ROOT_DIR/ncs-$NEW_NSO_VERSION $NCS_DIR &&
-rm -f  $NCS_RUN_DIR/upgrade'
+on_node_sh ${NODE2} 'rm $NCS_RUN_DIR/packages/* \
+                     && cp /home/admin/etc/package-store/dummy-1.0.tar.gz $NCS_RUN_DIR/packages \
+                     && cp /home/admin/etc/package-store/token-1.0.tar.gz $NCS_RUN_DIR/packages \
+                     && cp /home/admin/etc/package-store/tailf-hcc.tar.gz $NCS_RUN_DIR/packages \
+                     && rm $NCS_DIR \
+                     && ln -s $NCS_ROOT_DIR/ncs-$NEW_NSO_VERSION $NCS_DIR \
+                     && rm -f  $NCS_RUN_DIR/upgrade'
 
 while [[ "$(on_node ${NODE1} 'show high-availability status mode')" != *"primary"* ]]; do
     printf "${RED}#### Waiting for ${NODE1} to assume primary role...\n${NC}"

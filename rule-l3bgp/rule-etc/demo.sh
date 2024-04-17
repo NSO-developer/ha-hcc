@@ -62,8 +62,8 @@ EOF
 
 printf "\n${PURPLE}##### Configure tailf-hcc the HA cluster\n${NC}"
 for NODE in "${NODES[@]}" ; do 
-    on_node $NODE "config; hcc enabled vip-address ${NSO_VIP} bgp node ${NODE1} enabled gobgp-bin-dir /usr/bin as ${NODE1_AS} router-id ${NODE1_IP} neighbor ${NODE1_GW} as ${MANAGER_AS} ttl-min 254;
-hcc bgp node ${NODE2} enabled gobgp-bin-dir /usr/bin as ${NODE2_AS} router-id ${NODE2_IP} neighbor ${NODE2_GW} as ${MANAGER_AS} ttl-min 254;
+    on_node $NODE "config; hcc enabled vip-address ${NSO_VIP} bgp node ${NODE1} enabled as ${NODE1_AS} router-id ${NODE1_IP} neighbor ${NODE1_GW} as ${MANAGER_AS} ttl-min 254;
+hcc bgp node ${NODE2} enabled as ${NODE2_AS} router-id ${NODE2_IP} neighbor ${NODE2_GW} as ${MANAGER_AS} ttl-min 254;
 high-availability token very-secret;
 high-availability settings enable-failover true;
 high-availability ha-node ${NODE1} address ${NODE1_IP} nominal-role primary;

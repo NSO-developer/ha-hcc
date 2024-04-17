@@ -1,6 +1,7 @@
 ARG NSO_VERSION
 FROM cisco-nso-prod:${NSO_VERSION}
 RUN dnf --disableplugin subscription-manager install -y openssh-server net-tools rsyslog \
+    && groupadd ncsadmin \
     && useradd --create-home --home-dir /home/admin --no-user-group --no-log-init --groups ncsadmin --shell /bin/bash admin \
     && mkdir -p /home/admin/.ssh \
     && sed -i.bak -e "s/#PasswordAuthentication yes/PasswordAuthentication no/" \

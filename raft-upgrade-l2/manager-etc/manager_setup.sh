@@ -51,7 +51,7 @@ printf "${PURPLE}##### Generate TLS certificates\n${NC}"
 . /root/manager-etc/gen_tls_certs.sh
 generate_tls_certificates
 
-printf "${PURPLE}##### Update ncs.conf with HA Raft node config and add the host key and managers authorized public key to the nodes}\n${NC}"
+printf "${PURPLE}##### Update ncs.conf with HA Raft node config and add the host key and managers authorized public key to the nodes\n${NC}"
 for NODE in "${NODES[@]}" ; do
     sed -e "s/CLUSTER_NAME/${CLUSTER}/" \
         -e "s/NODE_NAME/$NODE/g" \

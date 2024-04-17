@@ -1,6 +1,7 @@
 ARG NSO_VERSION
 FROM cisco-nso-prod:${NSO_VERSION}
 RUN dnf --disableplugin subscription-manager install -y openssh-server sudo wget net-tools rsyslog \
+    && groupadd ncsadmin \
     && useradd --create-home --home-dir /home/admin --no-user-group --no-log-init --groups ncsadmin --shell /bin/bash admin \
     && cd /usr/bin \
     && wget https://github.com/osrg/gobgp/releases/download/v2.25.0/gobgp_2.25.0_linux_amd64.tar.gz \

@@ -13,11 +13,16 @@ function on_leader() { printf "${PURPLE}On leader CLI: ${NC}$@\n"; ssh -l admin 
 function on_leader_sh() { printf "${PURPLE}On leader: ${NC}$@\n"; ssh -l admin -p 22 -o ConnectTimeout=1 -o ConnectionAttempts=1 -o ServerAliveInterval=1 -o ServerAliveCountMax=1 -o LogLevel=ERROR ${NSO_VIP} "$@" ; }
 function on_node() { printf "${PURPLE}On $1 CLI: ${NC}$2\n"; ssh -l admin -p 2024 -o LogLevel=ERROR "$1" "$2" ; }
 
-printf "\n${PURPLE}##### Initialize tailf-hcc\n${NC}"
-on_node ${NODE1} "config; hcc enabled vip-address ${NSO_VIP}; commit"
-
 printf "\n${PURPLE}##### Initialize the HA cluster using the create-cluster action\n${NC}"
 on_node ${NODE1} "ha-raft create-cluster member [ ${NODE2} ${NODE3} ]"
+
+while [[ "$(on_node ${NODE1} 'show ha-raft status role')" != *"leader"* ]] ; do
+  printf "${RED}#### Waiting for ${NODE1} to become the initial leader...\n${NC}"
+  sleep 1
+done
+
+printf "\n${PURPLE}##### Initialize tailf-hcc\n${NC}"
+on_node ${NODE1} "config; hcc enabled vip-address ${NSO_VIP}; commit"
 
 printf "\n${GREEN}##### A three node HA setup demo\n${NC}"
 

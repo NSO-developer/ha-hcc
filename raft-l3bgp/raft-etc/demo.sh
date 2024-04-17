@@ -72,9 +72,9 @@ done
 
 printf "\n${PURPLE}##### Initialize HCC\n${NC}"
 on_node $NODE1 "config;
-hcc enabled vip-address ${NSO_VIP} bgp node ${NODE1} enabled gobgp-bin-dir /usr/bin as ${NODE1_AS} router-id ${NODE1_IP} neighbor ${NODE1_GW} as ${MANAGER_AS} ttl-min 254;
-hcc bgp node ${NODE2} enabled gobgp-bin-dir /usr/bin as ${NODE2_AS} router-id ${NODE2_IP} neighbor ${NODE2_GW} as ${MANAGER_AS} ttl-min 254;
-hcc bgp node ${NODE3} enabled gobgp-bin-dir /usr/bin as ${NODE3_AS} router-id ${NODE3_IP} neighbor ${NODE3_GW} as ${MANAGER_AS} ttl-min 254;
+hcc enabled vip-address ${NSO_VIP} bgp node ${NODE1} enabled as ${NODE1_AS} router-id ${NODE1_IP} neighbor ${NODE1_GW} as ${MANAGER_AS} ttl-min 254;
+hcc bgp node ${NODE2} enabled as ${NODE2_AS} router-id ${NODE2_IP} neighbor ${NODE2_GW} as ${MANAGER_AS} ttl-min 254;
+hcc bgp node ${NODE3} enabled as ${NODE3_AS} router-id ${NODE3_IP} neighbor ${NODE3_GW} as ${MANAGER_AS} ttl-min 254;
 commit"
 
 printf "\n${GREEN}##### A three node HA setup demo\n${NC}"

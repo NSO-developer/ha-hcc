@@ -10,10 +10,12 @@
         args:
           NSO_VERSION: ${NSO_VERSION}
         dockerfile: Dockerfile
-      command: sh -c 'cp /nso/authorized_keys /home/admin/.ssh/
+      entrypoint: sh
+      command: -c 'cp /nso/authorized_keys /home/admin/.ssh/
                 && /usr/sbin/sshd
                 && /usr/sbin/rsyslogd
                 && ncs-make-package --service-skeleton template --dest /nso/run/packages/dummy-1.0 --build --no-test --root-container dummies dummy
+                && mkdir -p /nso/etc /nso/run/cdb /nso/run/rollbacks /nso/run/scripts /nso/run/streams /nso/run/state /nso/run/packages
                 && /run-nso.sh'
       cap_add:
         - NET_ADMIN

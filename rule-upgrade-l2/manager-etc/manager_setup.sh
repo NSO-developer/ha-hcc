@@ -47,15 +47,14 @@ ssh-keygen -N "" -t ed25519 -m pem -f /root/.ssh/upgrade-keys/id_ed25519
 chmod 600 /root/.ssh/id_ed25519.pub /root/.ssh/upgrade-keys/id_ed25519
 chmod 750 /root/.ssh/upgrade-keys
 
-printf "${PURPLE}##### Copy the HCC package(s) to the manager package-store and NSO node where HA raft is initialized\n${NC}"
+printf "${PURPLE}##### Copy the HCC package(s) to the manager package-store\n${NC}"
 mkdir -p /root/package-store
 cp /root/manager-etc/ncs-*-tailf-hcc-*.tar.gz /root/package-store/
 
-printf "${PURPLE}##### Create and build dummy and RESTCONF token store packages and copy to the NSO node where HA raft is initialized\n${NC}"
+printf "${PURPLE}##### Create and build dummy and RESTCONF token store packages\n${NC}"
 set +u
 source /nso-${NSO_VERSION}/ncsrc
 set -u
-
 cd /root/package-store
 ncs-make-package --service-skeleton template \
                     --dest dummy-1.0 \
@@ -75,12 +74,12 @@ make -C token-1.0/src clean all
 tar cfz token-1.0.tar.gz token-1.0
 rm -rf token-1.0
 
-printf "${PURPLE}##### Update ncs.conf with HA Raft node config and add the host key and managers authorized public key to the nodes}\n${NC}"
+printf "${PURPLE}##### Add ncs.conf and the host key and managers authorized public key to the nodes\n${NC}"
 for NODE in "${NODES[@]}" ; do
     mkdir /$NODE/package-store
     cp dummy-1.0.tar.gz /$NODE/package-store/
     cp token-1.0.tar.gz /$NODE/package-store/
-    cp /root/package-store/ncs-*-tailf-hcc-*.tar.gz /$NODE/package-store/tailf-hcc.tar.gz
+    cp /root/package-store/ncs-${HCC_NSO_VERSION}-tailf-hcc-${HCC_VERSION}.tar.gz /$NODE/package-store/tailf-hcc.tar.gz
 
     cp /root/${NODE}_ssh_host_ed25519_key /$NODE/ssh_host_ed25519_key
     cp /root/${NODE}_ssh_host_ed25519_key.pub /$NODE/ssh_host_ed25519_key.pub
