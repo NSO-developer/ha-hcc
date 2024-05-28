@@ -26,11 +26,6 @@ set +u
 source /nso-${NEW_NSO_VERSION}/ncsrc
 set -u
 
-printf "\n${PURPLE}##### Backup before upgrading NSO\n${NC}"
-for NODE in "${NODES[@]}" ; do
-    on_node_sh $NODE '${NCS_DIR}/bin/ncs-backup'
-done
-
 printf "\n${PURPLE}##### Copy the new NSO ${NEW_NSO_VERSION} version to all nodes\n${NC}"
 for NODE in "${NODES[@]}" ; do
     scp_node "manager-etc/nso-${NEW_NSO_VERSION}.linux.${NSO_ARCH}.installer.bin" "admin@$NODE:/tmp/"
@@ -53,8 +48,14 @@ while [ "$(on_leader 'show ha-raft status log replications state | include in-sy
     sleep .5
 done
 
+printf "\n${PURPLE}##### Backup before upgrading NSO\n${NC}"
+for NODE in "${NODES[@]}" ; do
+    on_node_sh $NODE '${NCS_DIR}/bin/ncs-backup'
+done
+
 set +e
 printf "\n${PURPLE}##### Compact the CDB write log and stop the follower nodes\n${NC}"
+printf "\n${PURPLE}##### Note: need to compact before stopping NSO as the container will restart when NSO is stopped\n${NC}"
 for NODE in "${NODES[@]}" ; do
     if [ "$NODE" != "$CURRENT_LEADER" ] ; then
         on_node_sh $NODE 'touch $NCS_RUN_DIR/upgrade \
@@ -79,6 +80,11 @@ for NODE in "${NODES[@]}" ; do
     done
 done
 set -e
+
+printf "\n${PURPLE}##### Delete the raft state on all nodes\n${NC}"
+for NODE in "${NODES[@]}" ; do
+    on_node_sh $NODE "rm -rf $NCS_RUN_DIR/state/raft"
+done
 
 printf "\n${PURPLE}##### Delete the old packages\n${NC}"
 for NODE in "${NODES[@]}" ; do
@@ -112,30 +118,21 @@ for NODE in "${NODES[@]}" ; do
                         && ln -s $NCS_ROOT_DIR/ncs-$NEW_NSO_VERSION $NCS_ROOT_DIR/current"
 done
 
-printf "\n${PURPLE}##### Start the leader\n${NC}"
-on_node_sh $CURRENT_LEADER "rm -f $NCS_RUN_DIR/upgrade"
-until on_node $CURRENT_LEADER "show ncs-state version" = "ncs-state version $NEW_NSO_VERSION" ; do
-    printf "${RED}##### Waiting for NSO on $CURRENT_LEADER to come back up. Retry...\n${NC}"
-    sleep 1
-done
-on_node_sh $CURRENT_LEADER "rm -f $NCS_RUN_DIR/package_reload"
-
-printf "\n${PURPLE}##### Start the follower nodes\n${NC}"
+printf "\n${PURPLE}##### Start NSO on all nodes\n${NC}"
 for NODE in "${NODES[@]}" ; do
-    if [ "$NODE" != "$CURRENT_LEADER" ] ; then
-        on_node_sh $NODE "rm -f  $NCS_RUN_DIR/upgrade"
-    fi
+    on_node_sh $NODE "rm -f  $NCS_RUN_DIR/upgrade"
 done
 
 set +e
 for NODE in "${NODES[@]}" ; do
-    if [ "$NODE" != "$CURRENT_LEADER" ] ; then
-        until on_node $NODE "show ncs-state version" = "ncs-state version $NEW_NSO_VERSION" ; do
-            printf "${RED}##### Waiting for NSO on $NODE to come back up. Retry...\n${NC}"
-            sleep 1
-        done
-    fi
+    until on_node $NODE "show ncs-state version" = "ncs-state version $NEW_NSO_VERSION" ; do
+        printf "${RED}##### Waiting for NSO on $NODE to come back up. Retry...\n${NC}"
+        sleep 1
+    done
 done
+
+printf "\n${PURPLE}##### Re-initialize the HA cluster using the create-cluster action from ${NODE1}\n${NC}"
+on_node ${NODE1} "ha-raft create-cluster member [ ${NODE2} ${NODE3} ]"
 
 until ping -c1 -w2 ${NSO_VIP} >/dev/null 2>&1 ; do
     printf "${RED}##### Waiting for the ${NSO_VIP} VIP route to the new leader. Retry...\n${NC}"
