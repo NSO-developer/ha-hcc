@@ -54,22 +54,24 @@ for NODE in "${NODES[@]}" ; do
 done
 
 set +e
-printf "\n${PURPLE}##### Compact the CDB write log and stop the follower nodes\n${NC}"
+printf "\n${PURPLE}##### Compact the CDB write log, delete the raft state, and stop the follower nodes\n${NC}"
 printf "\n${PURPLE}##### Note: need to compact before stopping NSO as the container will restart when NSO is stopped\n${NC}"
 for NODE in "${NODES[@]}" ; do
     if [ "$NODE" != "$CURRENT_LEADER" ] ; then
         on_node_sh $NODE 'touch $NCS_RUN_DIR/upgrade \
                           && rm $NCS_RUN_DIR/cdb/compact.lock \
                           && ncs --cdb-compact $NCS_RUN_DIR/cdb \
+                          && rm -rf $NCS_RUN_DIR/state/raft \
                           && ${NCS_DIR}/bin/ncs --stop'
     fi
 done
 
-printf "\n${PURPLE}##### Compact the CDB write log and stop the leader\n${NC}"
+printf "\n${PURPLE}##### Compact the CDB write log, delete the raft state, and stop the leader\n${NC}"
 on_node_sh $CURRENT_LEADER 'touch $NCS_RUN_DIR/upgrade \
                             && touch $NCS_RUN_DIR/package_reload \
                             && rm $NCS_RUN_DIR/cdb/compact.lock \
                             && ncs --cdb-compact $NCS_RUN_DIR/cdb \
+                            && rm -rf $NCS_RUN_DIR/state/raft \
                             && ${NCS_DIR}/bin/ncs --stop'
 
 printf "\n${PURPLE}##### Verify that all nodes are waiting for the upgrade\n${NC}"
@@ -80,11 +82,6 @@ for NODE in "${NODES[@]}" ; do
     done
 done
 set -e
-
-printf "\n${PURPLE}##### Delete the raft state on all nodes\n${NC}"
-for NODE in "${NODES[@]}" ; do
-    on_node_sh $NODE "rm -rf $NCS_RUN_DIR/state/raft"
-done
 
 printf "\n${PURPLE}##### Delete the old packages\n${NC}"
 for NODE in "${NODES[@]}" ; do
