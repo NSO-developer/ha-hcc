@@ -11,53 +11,58 @@ NSO in containers. See the Containerized NSO chapter in the NSO Administration
 Guide for guidance.
 
 Example Network Overview
-~~~~~~~~~~~~~~~~~~~~~~~~
-manager: management station with CLI, RESTCONF, and SSH access to the london
-         and paris nodes.
-paris:   NSO, Tail-f HCC package (uses arping and iproute2 utils)
-london:  NSO, Tail-f HCC package (uses arping and iproute2 utils)
+------------------------
 
+- manager: management station with CLI, RESTCONF, and SSH access to the london
+           and paris nodes.
+- paris:   NSO, Tail-f HCC package (uses arping and iproute2 utils)
+- london:  NSO, Tail-f HCC package (uses arping and iproute2 utils)
 
-  ----------  docker 0 default bridge  ----------
-                          |
-                          | .1
-  -------  rule-upgrade-l2_NSO-net bridge  ------
-        |                 |                |
-        |                 |                |
-                    192.168.23.0/16
-        |                 |                |
-        | .98             | .2             | .99
-   +----------+     +----------+     +----------+
-   |  london  |     | manager  |     |  paris   |
-   +----------+     +----------+     +----------+
+      ----------  docker 0 default bridge  ----------
+                              |
+                              | .1
+      -------  rule-upgrade-l2_NSO-net bridge  ------
+            |                 |                |
+            |                 |                |
+                        192.168.23.0/16
+            |                 |                |
+            | .98             | .2             | .99
+      +----------+     +----------+     +----------+
+      |  london  |     | manager  |     |  paris   |
+      +----------+     +----------+     +----------+
 
 Prerequisites
-~~~~~~~~~~~~~
-- NSO_VERSION >= 5.7
-- nso-${NSO_VERSION}.linux.${NSO_ARCH}.installer.bin and
-  nso-${NEW_NSO_VERSION}.linux.${NSO_ARCH}.installer.bin, e.g. for NSO 6.2.2
+-------------
+
+- `NSO_VERSION` >= 5.7
+- `nso-${NSO_VERSION}.linux.${NSO_ARCH}.installer.bin` and
+  `nso-${NEW_NSO_VERSION}.linux.${NSO_ARCH}.installer.bin`, e.g. for NSO 6.2.2
   and 6.2.3
-- ncs-${HCC_NSO_VERSION}-tailf-hcc-${HCC_VERSION}.tar.gz and
-  ncs-${NEW_HCC_NSO_VERSION}-tailf-hcc-${NEW_HCC_VERSION}.tar.gz, e.g 6.2 and
-  6.1.8 (could be the same version, see example below)
-    Example:
-    $ pwd
-    /Users/tailf/rule-upgrade-l2
-    $ ls -1 n*
-    ncs-6.2-tailf-hcc-6.0.1.tar.gz
-    nso-6.2.3.linux.x86_64.installer.bin
-    nso-6.2.2.linux.x86_64.installer.bin
+- `ncs-${HCC_NSO_VERSION}-tailf-hcc-${HCC_VERSION}.tar.gz` and
+  `ncs-${NEW_HCC_NSO_VERSION}-tailf-hcc-${NEW_HCC_VERSION}.tar.gz`, e.g 6.2 and
+  6.1.8 (could be the same version, see example below). Example:
+
+      $ pwd
+      /Users/tailf/rule-upgrade-l2
+      $ ls -1 n*
+      ncs-6.2-tailf-hcc-6.0.1.tar.gz
+      nso-6.2.3.linux.x86_64.installer.bin
+      nso-6.2.2.linux.x86_64.installer.bin
+
 - Docker installed
 
 Running the Example
-~~~~~~~~~~~~~~~~~~~
+-------------------
+
 1. Add the NSO installation and Tail-f HCC packages into the ./manager-etc
    directory. Change the version number NSO_VERSION, NEW_NSO_VERSION,
    HCC_NSO_VERSION, NEW_HCC_NSO_VERSION, HCC_VERSION, and NEW_HCC_VERSION
    variables in the setup.sh file.
    Select the NSO_ARCH in the setup.sh file. The default is x86_64.
 2. Run the setup.sh script:
-     $ ./setup.sh
+
+        $ ./setup.sh
+
    This will start the manager and nodes running NSO using Docker Compose.
 3. Press a key to run a CLI + shell script demo from the manager node.
 4. Press a key to run an NSO and HCC version upgrade demo from the manager node.
@@ -66,78 +71,91 @@ Running the Example
 7. Press a key to follow the logs from the manager and NSO nodes. Hit ctrl-c.
 8. Connect to the london and paris shell to examine the Linux kernel route
    status.
-     $ docker exec -it paris.fra bash
-     $ ip address show dev eth0
-     $ arp -a
-     $ exit
+
+        $ docker exec -it paris.fra bash
+        $ ip address show dev eth0
+        $ arp -a
+        $ exit
+
 9. Get the high-availability status using RESTCONF instead of CLI:
-     $ docker exec -it manager bash
+
+        $ docker exec -it manager bash
+
    Get a RESTCONF token for authentication using the CLI:
-     root@manager$ ssh -l admin -p 2024 192.168.23.122
-     admin@nso-paris# generate_token
-     token N6jNpjth1FHyNNy0s/VeSNGSMlhQVN5cnINPwbtrAik=
-     admin@nso-paris# exit
+
+        root@manager$ ssh -l admin -p 2024 192.168.23.122
+        admin@nso-paris# generate_token
+        token N6jNpjth1FHyNNy0s/VeSNGSMlhQVN5cnINPwbtrAik=
+        admin@nso-paris# exit
+
    Now use curl or Python requests, as the run_rc.py script does, to get
    the HA status. curl variant:
-     root@manager$ curl -ki -H "X-Auth-Token: \
-     N6jNpjth1FHyNNy0s/VeSNGSMlhQVN5cnINPwbtrAik=" \
-     -H "Accept: application/yang-data+json" \
-     https://192.168.23.122:8888/restconf/data/\
-     tailf-ncs:high-availability/status
-     {
-       "tailf-ncs:status": {
-         "mode": "master",
-         "current-id": "paris",
-         "assigned-role": "master",
-         "read-only-mode": false,
-         "connected-slave": [
-           {
-             "id": "london",
-             "address": "192.168.23.98"
-           }
-         ]
-       }
-     }
+
+        root@manager$ curl -ki -H "X-Auth-Token: \
+        N6jNpjth1FHyNNy0s/VeSNGSMlhQVN5cnINPwbtrAik=" \
+        -H "Accept: application/yang-data+json" \
+        https://192.168.23.122:8888/restconf/data/\
+        tailf-ncs:high-availability/status
+        {
+          "tailf-ncs:status": {
+            "mode": "master",
+            "current-id": "paris",
+            "assigned-role": "master",
+            "read-only-mode": false,
+            "connected-slave": [
+              {
+                "id": "london",
+                "address": "192.168.23.98"
+              }
+            ]
+          }
+        }
    Python requests variant:
-     root@manager$ python3
-     >>> import requests
-     >>> requests.packages.urllib3.disable_warnings(\
-         requests.packages.urllib3.exceptions.InsecureRequestWarning)
-     >>> r = requests.get("https://192.168.23.122:8888/restconf/data/\
-         tailf-ncs:high-availability/status", \
-         headers={'Content-Type': 'application/yang-data+json', \
-         'X-Auth-Token': 'N6jNpjth1FHyNNy0s/VeSNGSMlhQVN5cnINPwbtrAik='}, \
-         verify=False)
-     >>> print(r.text)
-     {
-       "tailf-ncs:status": {
-         "mode": "master",
-         "current-id": "paris",
-         "assigned-role": "master",
-         "read-only-mode": false,
-         "connected-slave": [
-           {
-             "id": "london",
-             "address": "192.168.23.98"
-           }
-         ]
-       }
-     }
+
+        root@manager$ python3
+        >>> import requests
+        >>> requests.packages.urllib3.disable_warnings(\
+            requests.packages.urllib3.exceptions.InsecureRequestWarning)
+        >>> r = requests.get("https://192.168.23.122:8888/restconf/data/\
+            tailf-ncs:high-availability/status", \
+            headers={'Content-Type': 'application/yang-data+json', \
+            'X-Auth-Token': 'N6jNpjth1FHyNNy0s/VeSNGSMlhQVN5cnINPwbtrAik='}, \
+            verify=False)
+        >>> print(r.text)
+        {
+          "tailf-ncs:status": {
+            "mode": "master",
+            "current-id": "paris",
+            "assigned-role": "master",
+            "read-only-mode": false,
+            "connected-slave": [
+              {
+                "id": "london",
+                "address": "192.168.23.98"
+              }
+            ]
+          }
+        }
+
 10. Connect to the london and paris shell to examine the Linux
     kernel route status.
-     $ docker exec -it paris bash
-     $ ip address show dev eth0
-     $ arp -a
-     $ exit
+
+        $ docker exec -it paris bash
+        $ ip address show dev eth0
+        $ arp -a
+        $ exit
+
 11. Examine the setup.sh -> compose.yaml -> common-services.yml ->
     manager.Dockerfile -> Dockerfile -> manager-etc/manager_setup.sh ->
     node-etc/node_setup.sh -> manager-etc/demo.sh -> manager-etc/upgrade_nso.sh
     -> manager-etc/upgrade_packages.sh -> manager-etc/demo_rc.py files.
 12. Cleanup
-     $ ./teardown.sh
+
+        $ ./teardown.sh
 
 Implementation Details
-~~~~~~~~~~~~~~~~~~~~~~
+----------------------
+
 This demo uses Docker containers to set up the Tail-f HCC NSO package in layer 2
 mode with NSO and its dependencies and perform an NSO version upgrade and
 package version upgrade as described in the NSO Administration Guide
@@ -170,7 +188,8 @@ See the rsyslogd config file under /etc/rsyslogd.conf for details on the
 rsyslogd setup on the paris, london, and manager nodes.
 
 Further Reading
-~~~~~~~~~~~~~~~
+---------------
+
 + NSO Administrator Guide: NSO Deployment, NSO rule-based HA, and Tail-f HCC
   Package
 + examples.ncs/development-guide/high-availability examples

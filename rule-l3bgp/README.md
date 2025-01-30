@@ -9,81 +9,91 @@ NSO in containers. See the Containerized NSO chapter in the NSO Administration
 Guide for guidance.
 
 Example Network Overview
-~~~~~~~~~~~~~~~~~~~~~~~~
-manager: SSH client to manage the paris and london nodes, FRRouting Zebra + BGP
-         and nftables port forwarding + NAT
-paris:  NSO, Tail-f HCC package (uses GoBGP and iproute2 utils)
-london: NSO, Tail-f HCC package (uses GoBGP and iproute2 utils)
+------------------------
 
-  ---------------  docker 0 default bridge  ---------------
-                              | .1
-                              |
-                        172.17.0.0/16
-                              |
-                              | .2
-                    +------------------+
-                    | manager          |
-                    | ID: 172.17.0.2   |
-                    | AS: 64514        |
-                    +------------------+
-                     .2 /           \ .2
-                       /             \
-          192.168.31.0/24           192.168.32.0/24
-                     /                 \
-                .98 /                   \ .99
-  +-------------------+               +-------------------+
-  | london            |               | paris             |
-  | ID: 192.168.31.98 |               | ID: 192.168.32.99 |
-  | AS: 64512         |               | AS: 64511         |
-  +-------------------+               +-------------------+
+- manager: SSH client to manage the paris and london nodes, FRRouting Zebra + BGP
+           and nftables port forwarding + NAT
+- paris:  NSO, Tail-f HCC package (uses GoBGP and iproute2 utils)
+- london: NSO, Tail-f HCC package (uses GoBGP and iproute2 utils)
+
+      ---------------  docker 0 default bridge  ---------------
+                                  | .1
+                                  |
+                            172.17.0.0/16
+                                  |
+                                  | .2
+                        +------------------+
+                        | manager          |
+                        | ID: 172.17.0.2   |
+                        | AS: 64514        |
+                        +------------------+
+                        .2 /           \ .2
+                          /             \
+              192.168.31.0/24           192.168.32.0/24
+                        /                 \
+                    .98 /                   \ .99
+      +-------------------+               +-------------------+
+      | london            |               | paris             |
+      | ID: 192.168.31.98 |               | ID: 192.168.32.99 |
+      | AS: 64512         |               | AS: 64511         |
+      +-------------------+               +-------------------+
 
 Prerequisites
-~~~~~~~~~~~~~
-NSO_VERSION >= 6.1
-NSO production container: cisco-nso-prod:${NSO_VERSION}
-ncs-${HCC_NSO_VERSION}-tailf-hcc-${HCC_VERSION}.tar.gz
-Docker installed
+-------------
+
+- `NSO_VERSION` >= 6.1
+- NSO production container: `cisco-nso-prod:${NSO_VERSION}`
+- `ncs-${HCC_NSO_VERSION}-tailf-hcc-${HCC_VERSION}.tar.gz`
+- Docker installed
+
 NOTE: nftables will not work in an x86_64 container on Apple Silicon arm64
 
 Running the Example
-~~~~~~~~~~~~~~~~~~~
+-------------------
+
 1. Load the NSO production container image using Docker and add Tail-f HCC
    package into the ./rule-etc directory. If necessary, change the version
    number NSO_VERSION, HCC_NSO_VERSION, and HCC_VERSION variables in the
    setup.sh file.
 2. Run the setup.sh script:
-     $ ./setup.sh
+
+        $ ./setup.sh
+
    This will start the manager and nodes running NSO using Docker Compose.
 3. Press a key to run a demo from the manager node.
 4. Press a key to follow the logs from the manager and NSO nodes. Hit ctrl-c.
 5. Connect to the london, paris, and manager shell to examine the BGP and Linux
    kernel route status.
-     $ docker exec -it paris.fra bash
-     $ ip address
-     $ ip route
-     $ cat /tmp/bgp.*.conf
-     $ gobgp global
-     $ gobgp global rib
-     $ gobgp neighbor
-     $ exit
 
-     $ docker exec -it manager bash
-     # ip address
-     # ip route
-     # vtysh
-     # show bgp summary
-     # show ip bgp
-     # show bgp neighbor
-     # exit
-     # exit
+        $ docker exec -it paris.fra bash
+        $ ip address
+        $ ip route
+        $ cat /tmp/bgp.*.conf
+        $ gobgp global
+        $ gobgp global rib
+        $ gobgp neighbor
+        $ exit
+
+        $ docker exec -it manager bash
+        # ip address
+        # ip route
+        # vtysh
+        # show bgp summary
+        # show ip bgp
+        # show bgp neighbor
+        # exit
+        # exit
+
 6. Examine the setup.sh -> compose.yaml -> common-services.yml ->
    manager.Dockerfile -> Dockerfile -> rule-etc/demo_setup.sh ->
    rule-etc/demo.sh files.
 7. Cleanup
-     $ ./teardown.sh
+
+        $ ./teardown.sh
 
 Implementation Details
-~~~~~~~~~~~~~~~~~~~~~~
+----------------------
+
 This demo uses Docker containers to set up the Tail-f HCC NSO package in layer 3
 BGP mode with NSO and its dependencies as described in the NSO Administration
 Guide chapter "Tail-f HCC Package". The steps for the paris and london nodes
@@ -101,7 +111,8 @@ a Debian distribution.
   node to the VIP address port 2024 of NSO.
 
 Further Reading
-~~~~~~~~~~~~~~~
+---------------
+
 + NSO Administrator Guide: NSO rule-based HA & Tail-f HCC Package
 + examples.ncs/high-availability examples
 + https://osrg.github.io/gobgp/
