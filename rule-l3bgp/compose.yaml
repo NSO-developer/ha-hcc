@@ -1,4 +1,3 @@
-version: '1.0'
 volumes:
   NSO1-vol:
   NSO2-vol:
