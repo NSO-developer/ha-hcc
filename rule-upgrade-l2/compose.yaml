@@ -1,4 +1,3 @@
-version: '1.0'
 volumes:
   etc-vol1:
   etc-vol2:
