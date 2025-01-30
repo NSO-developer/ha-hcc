@@ -16,19 +16,18 @@ Example Network Overview
 - london:  NSO, Tail-f HCC package (uses arping and iproute2 utils)
 - berlin:  NSO, Tail-f HCC package (uses arping and iproute2 utils)
 
-
-    --------------------  docker 0 default bridge  -------------------
-                                      |
-                                      | .1
-    --------------------  raft-l2_NSO-net bridge  --------------------
-          |                 |                |               |
-          |                 |                |               |
-                                192.168.23.0/16
-          |                 |                |               |
-          | .97             | .2             | .98           | .99
-        +----------+     +----------+     +----------+     +----------+
-        | berlin   |     | manager  |     | london   |     | paris    |
-        +----------+     +----------+     +----------+     +----------+
+      --------------------  docker 0 default bridge  -------------------
+                                        |
+                                        | .1
+      --------------------  raft-l2_NSO-net bridge  --------------------
+            |                 |                |               |
+            |                 |                |               |
+                                  192.168.23.0/16
+            |                 |                |               |
+            | .97             | .2             | .98           | .99
+          +----------+     +----------+     +----------+     +----------+
+          | berlin   |     | manager  |     | london   |     | paris    |
+          +----------+     +----------+     +----------+     +----------+
 
 Prerequisites
 -------------
