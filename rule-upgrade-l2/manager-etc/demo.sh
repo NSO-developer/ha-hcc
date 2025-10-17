@@ -134,17 +134,15 @@ printf "\n${PURPLE}The updated ARP entry for the ${NSO_VIP} VIP address\n${NC}"
 arp -a
 
 printf "\n${PURPLE}##### Role-revert the nodes back to start-up settings without using the VIP address to the primary as it will go down when HA is disabled\n${NC}"
-on_node $SECONDARY "high-availability disable"
-on_node $PRIMARY "high-availability disable"
+on_node $SECONDARY "high-availability be-primary"
+on_node $PRIMARY "high-availability be-secondary-to node $SECONDARY"
 
-on_node $NODE1 "high-availability enable"
 set +e
 while [[ "$(on_node $NODE1 'high-availability status mode')" != *"primary"* ]] ; do
   printf "${RED}#### Waiting for $NODE1 to revert to primary role...\n${NC}"
   sleep 1
 done
 
-on_node $NODE2 "high-availability enable"
 while [[ "$(on_node $NODE1 'high-availability status mode')" != *"secondary"* ]] ; do
   printf "${RED}#### Waiting for $NODE2 to revert to secondary role...\n${NC}"
   sleep 1

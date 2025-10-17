@@ -12,12 +12,20 @@
         dockerfile: Dockerfile
       entrypoint: sh
       command: -c 'cp /nso/authorized_keys /home/admin/.ssh/
+                && chmod 644 /home/admin/.ssh/authorized_keys
+                && chown -Rh admin:ncsadmin /home/admin/.ssh
+                && mkdir -p /nso/.ssh
+                && chmod 755 /nso/.ssh
+                && cp /nso/authorized_keys /nso/.ssh/
+                && chmod 644 /nso/.ssh/authorized_keys
                 && cp -r /nso/etc/dist /etc/ncs/
+                && chmod 700 /etc/ncs/dist/ssl/private
                 && /usr/sbin/sshd
                 && /usr/sbin/rsyslogd
                 && ncs-make-package --service-skeleton template --dest /nso/run/packages/dummy-1.0 --build --no-test --root-container dummies dummy
                 && mkdir -p /nso/etc /nso/run/cdb /nso/run/rollbacks /nso/run/scripts /nso/run/streams /nso/run/state /nso/run/packages
-                && /run-nso.sh'
+                && export HOME=/nso
+                && runuser -m -u nso -g nso -- /run-nso.sh'
       cap_add:
         - NET_ADMIN
       healthcheck:

@@ -14,13 +14,10 @@ printf "\n${PURPLE}##### Start the rsyslog daemon\n${NC}"
 /usr/sbin/rsyslogd
 
 printf "\n${PURPLE}##### Generate the ncs.crypto_keys file\n${NC}"
-function gen_random() { dd if=/dev/urandom bs=1 count=$1 2>/dev/null | xxd -ps; }
-echo "DES3CBC_KEY1=$(gen_random 8)" > /root/ncs.crypto_keys
+AES128=$(openssl rand -hex 16)
+AES256=$(openssl rand -hex 32)
+printf "EXTERNAL_KEY_FORMAT=2\nAESCFB128_KEY[0]=${AES128}\nAES256CFB128_KEY[0]=${AES256}\n" >> "/root/ncs.crypto_keys"
 chmod 640 /root/ncs.crypto_keys
-echo "DES3CBC_KEY2=$(gen_random 8)" >> /root/ncs.crypto_keys
-echo "DES3CBC_KEY3=$(gen_random 8)" >> /root/ncs.crypto_keys
-echo "AESCFB128_KEY=$(gen_random 16)" >> /root/ncs.crypto_keys
-echo "AES256CFB128_KEY=$(gen_random 16)$(gen_random 16)" >> /root/ncs.crypto_keys
 
 printf "${PURPLE}##### Create the nodes host keys and copy the public key to the manager node known_hosts file\n${NC}"
 mkdir /root/.ssh

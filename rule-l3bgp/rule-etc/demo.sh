@@ -10,9 +10,8 @@ NC='\033[0m' # No Color
 NODES=( ${NODE1} ${NODE2} )
 
 function on_primary() { printf "${PURPLE}On primary CLI: ${NC}$@\n"; ssh -l admin -p 2024 -o LogLevel=ERROR ${NSO_VIP} "$@" ; }
-function on_primary_sh() { printf "${PURPLE}On primary: ${NC}$@\n"; ssh -l admin -p 22 -o ServerAliveInterval=1 -o ServerAliveCountMax=1 -o LogLevel=ERROR ${NSO_VIP} "$@" ; }
+function on_primary_sh() { printf "${PURPLE}On primary: ${NC}$@\n"; ssh -l nso -p 22 -o ServerAliveInterval=1 -o ServerAliveCountMax=1 -o LogLevel=ERROR ${NSO_VIP} "$@" ; }
 function on_node() { printf "${PURPLE}On $1 CLI: ${NC}$2\n"; ssh -l admin -p 2024 -o LogLevel=ERROR "$1" "$2"; }
-function on_node_sh() { printf "${PURPLE}On $1: ${NC}$2\n"; ssh -l admin -p 22 -o LogLevel=ERROR "$1" "$2" ; }
 
 ARRAY=$(hostname -i)
 MANAGER_IP="${ARRAY%% *}"
@@ -129,7 +128,7 @@ TIMEOUT=$((RA*RI))
 
 printf "\n${PURPLE}##### Observe a failover by bringing down $PRIMARY (current primary)\n${NC}"
 set +e
-on_primary_sh "ncs --stop"
+on_primary_sh "/opt/ncs/current/bin/ncs --stop"
 
 printf "${PURPLE}##### The secondary will attempt to reconnect to the primary $RA times every $RI s (timeout after $TIMEOUT s)\n${NC}"
 printf "${PURPLE}##### Test the ${NSO_VIP} VIP route to the new primary\n${NC}"
@@ -175,18 +174,16 @@ on_node $SECONDARY "show running-config dummies"
 printf "\n${PURPLE}The updated ARP entry for the ${NSO_VIP} VIP address\n${NC}"
 arp -a
 
-printf "\n${PURPLE}##### Role-revert the nodes back to start-up settings without using the VIP address to the primary as it will go down when HA is disabled\n${NC}"
-on_node $SECONDARY "high-availability disable"
-on_node $PRIMARY "high-availability disable"
+printf "\n${PURPLE}##### Role-revert the nodes back to start-up settings\n${NC}"
+on_node $SECONDARY "high-availability be-primary"
+on_node $PRIMARY "high-availability be-secondary-to node $SECONDARY"
 
-on_node $NODE1 "high-availability enable"
 set +e
 while [[ "$(on_node $NODE1 'high-availability status mode')" != *"primary"* ]] ; do
   printf "${RED}#### Waiting for $NODE1 to revert to primary role...\n${NC}"
   sleep 1
 done
 
-on_node $NODE2 "high-availability enable"
 while [[ "$(on_node $NODE1 'high-availability status mode')" != *"secondary"* ]] ; do
   printf "${RED}#### Waiting for $NODE2 to revert to secondary role...\n${NC}"
   sleep 1

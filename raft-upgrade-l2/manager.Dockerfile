@@ -9,7 +9,7 @@ COPY manager-etc/nso-${NSO_VERSION}.linux.${NSO_ARCH}.installer.bin /tmp/
 RUN apt-get update \
     && apt-get install -y --no-install-recommends net-tools openssh-client \
     iputils-ping iproute2 openssl libssl-dev libexpat1 make python3 \
-    python3-requests python3-paramiko rsyslog xxd curl \
+    python3-requests python3-paramiko rsyslog openssl curl \
     && chmod u+x /tmp/nso-${NSO_VERSION}.linux.${NSO_ARCH}.installer.bin \
     && /tmp/nso-${NSO_VERSION}.linux.${NSO_ARCH}.installer.bin /nso-${NSO_VERSION} \
     && sed -i.bak -e 's/#module(load="imtcp")/module(load="imtcp")/' \

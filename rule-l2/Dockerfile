@@ -1,9 +1,13 @@
 ARG NSO_VERSION
 FROM cisco-nso-prod:${NSO_VERSION}
+USER root
 RUN dnf --disableplugin subscription-manager install -y openssh-server net-tools rsyslog \
     && groupadd ncsadmin \
     && useradd --create-home --home-dir /home/admin --no-user-group --no-log-init --groups ncsadmin --shell /bin/bash admin \
     && mkdir -p /home/admin/.ssh \
+    && chmod 755 /home/admin/.ssh \
+    && chown -Rh admin:ncsadmin /home/admin \
+    && chmod 755 /home/admin \
     && sed -i.bak -e "s/#PasswordAuthentication yes/PasswordAuthentication no/" \
                   -e "s/PasswordAuthentication yes/PasswordAuthentication no/" \
                   -e "s/#PubkeyAuthentication yes/PubkeyAcceptedKeyTypes ssh-ed25519/" \
@@ -17,4 +21,6 @@ RUN dnf --disableplugin subscription-manager install -y openssh-server net-tools
                   -e '/imklog/s/^/#/' \
                   /etc/rsyslog.conf \
     && echo 'daemon.info		@@manager' >> /etc/rsyslog.conf \
-    && echo 'daemon.*			-/var/log/daemon.log' >> /etc/rsyslog.conf
+    && echo 'daemon.*			-/var/log/daemon.log' >> /etc/rsyslog.conf \
+    && echo "nso ALL = (root) NOPASSWD: /usr/sbin/ip" >> /etc/sudoers \
+    && echo "nso ALL = (root) NOPASSWD: /usr/sbin/arping" >> /etc/sudoers

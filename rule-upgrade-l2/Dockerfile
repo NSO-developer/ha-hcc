@@ -23,6 +23,7 @@ RUN groupadd ncsadmin \
     && /tmp/nso-${NSO_VERSION}.linux.${NSO_ARCH}.installer.bin --system-install \
        --run-as-user admin --non-interactive \
     && echo "admin ALL = (root) NOPASSWD: /sbin/ip" >> /etc/sudoers \
+    && echo "admin ALL = (root) NOPASSWD: /usr/sbin/ip" >> /etc/sudoers \
     && echo "admin ALL = (root) NOPASSWD: /opt/ncs/current/lib/ncs/bin/arping" >> /etc/sudoers \
     && echo "admin ALL = (root) NOPASSWD: /bin/arping" >> /etc/sudoers \
     && mkdir -p /home/admin/.ssh \

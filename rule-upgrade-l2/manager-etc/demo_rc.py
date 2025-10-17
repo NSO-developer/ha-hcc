@@ -206,7 +206,7 @@ def ha_demo():
                       verify=False)
     print("Status code: {}\n".format(r.status_code), flush=True)
 
-    print(f"{okblue}##### Stert the previous primary {prev_primary}\n{endc}", flush=True)
+    print(f"{okblue}##### Start the previous primary {prev_primary}\n{endc}", flush=True)
     on_node_sh(prev_primary, "admin", "rm $NCS_RUN_DIR/upgrade")
 
     print(f"{okblue}##### Wait for {prev_primary} to come back and be secondary to the new primary {current_primary}\n{endc}", flush=True)

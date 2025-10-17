@@ -350,8 +350,9 @@
         <enabled>false</enabled>
       </php>
     </cgi>
-    <!-- server-name>my-node.com</server-name>
-    <match-host-name>true</match-host-name -->
+    <match-host-name>true</match-host-name>
+    <server-name>${NSO_VIP}</server-name>
+    <server-alias>NODE_NAME</server-alias>
   </webui>
 
   <restconf>
