@@ -42,7 +42,7 @@ Prerequisites
   and 6.5.3
 - `ncs-${HCC_NSO_VERSION}-tailf-hcc-${HCC_VERSION}.tar.gz` and
   `ncs-${NEW_HCC_NSO_VERSION}-tailf-hcc-${NEW_HCC_VERSION}.tar.gz`, e.g 6.5 and
-  6.5.4 (could be the same version, see example below). Example:
+  6.5.4 (could be the same version). Example:
 
       $ pwd
       /Users/tailf/raft-upgrade-l2
