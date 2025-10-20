@@ -34,20 +34,21 @@ Example Network Overview
 Prerequisites
 -------------
 
-- `NSO_VERSION` >= 5.7
+- `NSO_VERSION` >= 6.5
 - `nso-${NSO_VERSION}.linux.${NSO_ARCH}.installer.bin` and
-  `nso-${NEW_NSO_VERSION}.linux.${NSO_ARCH}.installer.bin`, e.g. for NSO 6.2.2
-  and 6.2.3
+  `nso-${NEW_NSO_VERSION}.linux.${NSO_ARCH}.installer.bin`, e.g. for NSO 6.5.2
+  and 6.5.3
 - `ncs-${HCC_NSO_VERSION}-tailf-hcc-${HCC_VERSION}.tar.gz` and
-  `ncs-${NEW_HCC_NSO_VERSION}-tailf-hcc-${NEW_HCC_VERSION}.tar.gz`, e.g 6.2 and
-  6.1.8 (could be the same version, see example below). Example:
+  `ncs-${NEW_HCC_NSO_VERSION}-tailf-hcc-${NEW_HCC_VERSION}.tar.gz`, e.g 6.5 and
+  6.5.4 (could be the same version). Example:
 
       $ pwd
       /Users/tailf/rule-upgrade-l2
       $ ls -1 n*
-      ncs-6.2-tailf-hcc-6.0.1.tar.gz
-      nso-6.2.3.linux.x86_64.installer.bin
-      nso-6.2.2.linux.x86_64.installer.bin
+      ncs-6.5.3-tailf-hcc-6.0.6.tar.gz
+      ncs-6.5.4-tailf-hcc-6.0.6.tar.gz
+      nso-6.5.3.linux.x86_64.installer.bin
+      nso-6.5.4.linux.x86_64.installer.bin
 
 - Docker installed
 
