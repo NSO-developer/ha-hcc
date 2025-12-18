@@ -174,7 +174,7 @@
         <enabled>true</enabled>
       </syslog>
     </developer-log>
-    <developer-log-level>info</developer-log-level>
+    <developer-log-level>trace</developer-log-level>
 
     <audit-log>
       <enabled>true</enabled>
@@ -339,8 +339,8 @@
         <enabled>false</enabled>
       </php>
     </cgi>
-    <!-- server-name>my-node.com</server-name>
-    <match-host-name>true</match-host-name -->
+    <match-host-name>true</match-host-name>
+    <server-name>localhost</server-name>
   </webui>
 
   <restconf>

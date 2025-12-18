@@ -13,11 +13,11 @@ Guide for guidance.
 Example Network Overview
 ------------------------
 
-- manager: management station with CLI, RESTCONF, and SSH access to the berlin,
-           london, and paris nodes.
-- paris:   NSO, Tail-f HCC package (uses arping and iproute2 utils)
-- london:  NSO, Tail-f HCC package (uses arping and iproute2 utils)
-- berlin:  NSO, Tail-f HCC package (uses arping and iproute2 utils)
+- manager: management station with CLI, RESTCONF, and SSH access to the paris
+  nodes.
+- paris1:   NSO, Tail-f HCC package (uses arping and iproute2 utils)
+- paris2:  NSO, Tail-f HCC package (uses arping and iproute2 utils)
+- paris3:  NSO, Tail-f HCC package (uses arping and iproute2 utils)
 
 
       --------------------  docker 0 default bridge  -------------------
@@ -30,7 +30,7 @@ Example Network Overview
             |                 |                |               |
             | .97             | .2             | .98           | .99
       +----------+     +----------+     +----------+     +----------+
-      | berlin   |     | manager  |     | london   |     | paris    |
+      |  paris1  |     | manager  |     |  paris2  |     |  paris3  |
       +----------+     +----------+     +----------+     +----------+
 
 Prerequisites
@@ -72,10 +72,10 @@ Running the Example
 5. Press a key to run an NSO packages upgrade demo from the manager node.
 6. Press a key to run a Python request RESTCONF demo from the manager node.
 7. Press a key to follow the logs from the manager and NSO nodes. Hit ctrl-c.
-8. Connect to the berlin, london, and paris shell to examine the Linux kernel
+8. Connect to the paris1, paris2, and paris3 shell to examine the Linux kernel
    route status.
 
-        $ docker exec -it paris.fra bash
+        $ docker exec -it paris1.fra bash
         $ ip address show dev eth0
         $ arp -a
         $ exit
@@ -87,9 +87,9 @@ Running the Example
    Get a RESTCONF token for authentication using the CLI:
 
         root@manager$ ssh -l admin -p 2024 192.168.23.122
-        admin@nso-paris# generate_token
+        admin@nso-paris1# generate_token
         token N6jNpjth1FHyNNy0s/VeSNGSMlhQVN5cnINPwbtrAik=
-        admin@nso-paris# exit
+        admin@nso-paris1# exit
 
    Now use curl or Python requests, as the run_rc.py script does, to get
    the HA status. curl variant:
@@ -101,13 +101,13 @@ Running the Example
         tailf-ncs:high-availability/status
         {
           "tailf-ncs:status": {
-            "mode": "master",
-            "current-id": "paris",
-            "assigned-role": "master",
+            "mode": "leader",
+            "current-id": "paris1",
+            "assigned-role": "leader",
             "read-only-mode": false,
-            "connected-slave": [
+            "connected-follower": [
               {
-                "id": "london",
+                "id": "paris2",
                 "address": "192.168.23.98"
               }
             ]
@@ -128,23 +128,23 @@ Running the Example
         >>> print(r.text)
         {
           "tailf-ncs:status": {
-            "mode": "master",
-            "current-id": "paris",
-            "assigned-role": "master",
+            "mode": "leader",
+            "current-id": "paris1",
+            "assigned-role": "leader",
             "read-only-mode": false,
-            "connected-slave": [
+            "connected-follower": [
               {
-                "id": "london",
+                "id": "paris2",
                 "address": "192.168.23.98"
               }
             ]
           }
         }
 
-10. Connect to the london and paris shell to examine the Linux
+10. Connect to the london and paris1 shell to examine the Linux
     kernel route status.
 
-        $ docker exec -it paris bash
+        $ docker exec -it paris1 bash
         $ ip address show dev eth0
         $ arp -a
         $ exit
@@ -162,9 +162,9 @@ Implementation Details
 
 This demo uses Docker containers to set up the Tail-f HCC NSO package in layer 2
 mode with NSO and its dependencies and perform an NSO version upgrade and
-package version upgrade as described in the NSO Administration Guide
-chapter "Tail-f HCC Package". The steps for the paris, london, and berlin nodes
-described by the documentation are implemented by the setup.sh, compose.yaml,
+package version upgrade as described in the NSO Administration Guide chapter
+"Tail-f HCC Package". The steps for the paris nodes described by the
+documentation are implemented by the setup.sh, compose.yaml,
 common-services.yml, manager.Dockerfile, Dockerfile,
 manager-etc/manager_setup.sh, node-etc/node_setup.sh, manager-etc/demo.sh,
 manager-etc/upgrade_nso.sh, manager-etc/upgrade_packages.sh, and
@@ -177,19 +177,18 @@ context. Linux capabilities such as network admin are added to containers and
 specific commands to allow running them in the context of the admin user. See
 the compose.yaml, common-services.yml and Dockerfile files for details.
 
-SSH to the paris, london, and berlin nodes for shell and NSO CLI accces use
-public key-based authentication/login, while RESTCONF uses token validation for
-authentication. Tokens are retrieved through the NSO CLI that uses a
-shell script to generate a token. Password authentication has been disabled for
-the paris, london, and berlin nodes.
+SSH to the paris nodes for shell and NSO CLI accces use public key-based
+authentication/login, while RESTCONF uses token validation for authentication.
+Tokens are retrieved through the NSO CLI that uses a shell script to generate a
+token. Password authentication has been disabled for the paris nodes.
 
-On the paris, london, and berlin nodes, the NSO ncs, developer, audit, netconf, snmp,
-and webui-access logs are configured in $NCS_CONFIG_DIR/ncs.conf to go to a
-local syslog with the daemon facility managed by rsyslogd.
-rsyslogd pass the logs to a local /var/log/daemon.log and send logs with log
-level info or higher over TCP to the manager node's joint /var/log/daemon.log.
-See the rsyslogd config file under /etc/rsyslogd.conf for details on the
-rsyslogd setup on the paris, london, berlin, and manager nodes.
+On the paris nodes, the NSO ncs, developer, audit, netconf, snmp, and
+webui-access logs are configured in $NCS_CONFIG_DIR/ncs.conf to go to a
+local syslog with the daemon facility managed by rsyslogd. rsyslogd pass the
+logs to a local /var/log/daemon.log and send logs with log level info or higher
+over TCP to the manager node's joint /var/log/daemon.log. See the rsyslogd
+config file under /etc/rsyslogd.conf for details on the rsyslogd setup on the
+paris and manager nodes.
 
 Further Reading
 ---------------

@@ -4,8 +4,8 @@ An NSO rule-based HA Tail-f HCC Layer-2 Deployment Example
 This example implementation is described by the NSO Administration Guide chapter
 NSO Deployment.
 The example show the parts that describe the installation of NSO, initial
-configuration of NSO, upgrade of NSO, and upgrade of NSO packages on the paris
-and london nodes.
+configuration of NSO, upgrade of NSO, and upgrade of NSO packages on the paris1
+and paris2 nodes.
 While this example use containers it is not intended as a guide to running
 NSO in containers. See the Containerized NSO chapter in the NSO Administration
 Guide for guidance.
@@ -13,10 +13,10 @@ Guide for guidance.
 Example Network Overview
 ------------------------
 
-- manager: management station with CLI, RESTCONF, and SSH access to the london
-           and paris nodes.
-- paris:   NSO, Tail-f HCC package (uses arping and iproute2 utils)
-- london:  NSO, Tail-f HCC package (uses arping and iproute2 utils)
+- manager: management station with CLI, RESTCONF, and SSH access to the paris1
+           and paris2 nodes.
+- paris1:  NSO, Tail-f HCC package (uses arping and iproute2 utils)
+- paris2:  NSO, Tail-f HCC package (uses arping and iproute2 utils)
 
       ----------  docker 0 default bridge  ----------
                               |
@@ -28,7 +28,7 @@ Example Network Overview
             |                 |                |
             | .98             | .2             | .99
       +----------+     +----------+     +----------+
-      |  london  |     | manager  |     |  paris   |
+      |  paris1  |     | manager  |     |  paris2  |
       +----------+     +----------+     +----------+
 
 Prerequisites
@@ -36,8 +36,8 @@ Prerequisites
 
 - `NSO_VERSION` >= 6.5
 - `nso-${NSO_VERSION}.linux.${NSO_ARCH}.installer.bin` and
-  `nso-${NEW_NSO_VERSION}.linux.${NSO_ARCH}.installer.bin`, e.g. for NSO 6.5.2
-  and 6.5.3
+  `nso-${NEW_NSO_VERSION}.linux.${NSO_ARCH}.installer.bin`, e.g. for NSO 6.5.5
+  and 6.5.6
 - `ncs-${HCC_NSO_VERSION}-tailf-hcc-${HCC_VERSION}.tar.gz` and
   `ncs-${NEW_HCC_NSO_VERSION}-tailf-hcc-${NEW_HCC_VERSION}.tar.gz`, e.g 6.5 and
   6.5.4 (could be the same version). Example:
@@ -45,10 +45,10 @@ Prerequisites
       $ pwd
       /Users/tailf/rule-upgrade-l2
       $ ls -1 n*
-      ncs-6.5.3-tailf-hcc-6.0.6.tar.gz
       ncs-6.5.4-tailf-hcc-6.0.6.tar.gz
-      nso-6.5.3.linux.x86_64.installer.bin
-      nso-6.5.4.linux.x86_64.installer.bin
+      ncs-6.5.4-tailf-hcc-6.0.6.tar.gz
+      nso-6.5.5.linux.x86_64.installer.bin
+      nso-6.5.6.linux.x86_64.installer.bin
 
 - Docker installed
 
@@ -70,10 +70,10 @@ Running the Example
 5. Press a key to run an NSO packages upgrade demo from the manager node.
 6. Press a key to run a Python request RESTCONF demo from the manager node.
 7. Press a key to follow the logs from the manager and NSO nodes. Hit ctrl-c.
-8. Connect to the london and paris shell to examine the Linux kernel route
+8. Connect to the paris1 and paris2 shell to examine the Linux kernel route
    status.
 
-        $ docker exec -it paris.fra bash
+        $ docker exec -it paris1.fra bash
         $ ip address show dev eth0
         $ arp -a
         $ exit
@@ -85,9 +85,9 @@ Running the Example
    Get a RESTCONF token for authentication using the CLI:
 
         root@manager$ ssh -l admin -p 2024 192.168.23.122
-        admin@nso-paris# generate_token
+        admin@nso-paris1# generate_token
         token N6jNpjth1FHyNNy0s/VeSNGSMlhQVN5cnINPwbtrAik=
-        admin@nso-paris# exit
+        admin@nso-paris1# exit
 
    Now use curl or Python requests, as the run_rc.py script does, to get
    the HA status. curl variant:
@@ -99,13 +99,13 @@ Running the Example
         tailf-ncs:high-availability/status
         {
           "tailf-ncs:status": {
-            "mode": "master",
-            "current-id": "paris",
-            "assigned-role": "master",
+            "mode": "primary",
+            "current-id": "paris1",
+            "assigned-role": "primary",
             "read-only-mode": false,
-            "connected-slave": [
+            "connected-secondary": [
               {
-                "id": "london",
+                "id": "paris1",
                 "address": "192.168.23.98"
               }
             ]
@@ -125,23 +125,23 @@ Running the Example
         >>> print(r.text)
         {
           "tailf-ncs:status": {
-            "mode": "master",
-            "current-id": "paris",
-            "assigned-role": "master",
+            "mode": "primary",
+            "current-id": "paris1",
+            "assigned-role": "primary",
             "read-only-mode": false,
-            "connected-slave": [
+            "connected-secondary": [
               {
-                "id": "london",
+                "id": "paris1",
                 "address": "192.168.23.98"
               }
             ]
           }
         }
 
-10. Connect to the london and paris shell to examine the Linux
+10. Connect to the paris1 and paris2 shell to examine the Linux
     kernel route status.
 
-        $ docker exec -it paris bash
+        $ docker exec -it paris2 bash
         $ ip address show dev eth0
         $ arp -a
         $ exit
@@ -160,7 +160,7 @@ Implementation Details
 This demo uses Docker containers to set up the Tail-f HCC NSO package in layer 2
 mode with NSO and its dependencies and perform an NSO version upgrade and
 package version upgrade as described in the NSO Administration Guide
-chapter "Tail-f HCC Package". The steps for the paris and london nodes
+chapter "Tail-f HCC Package". The steps for the paris1 and paris2 nodes
 described by the documentation are implemented by the setup.sh, compose.yaml,
 common-services.yml, manager.Dockerfile, Dockerfile,
 manager-etc/manager_setup.sh, node-etc/node_setup.sh, manager-etc/demo.sh,
@@ -174,19 +174,19 @@ context. Linux capabilities such as network admin are added to containers and
 specific commands to allow running them in the context of the admin user. See
 the compose.yaml, common-services.yml and Dockerfile files for details.
 
-SSH to the paris and london nodes for shell and NSO CLI accces use public
+SSH to the paris1 and paris2 nodes for shell and NSO CLI accces use public
 key-based authentication/login, while RESTCONF uses token validation for
 authentication. Tokens are retrieved through the NSO CLI that uses a
 shell script to generate a token. Password authentication has been disabled for
-the paris and london nodes.
+the paris nodes.
 
-On the paris and london nodes, the NSO ncs, developer, audit, netconf, snmp,
+On the paris nodes, the NSO ncs, developer, audit, netconf, snmp,
 and webui-access logs are configured in $NCS_CONFIG_DIR/ncs.conf to go to a
 local syslog with the daemon facility managed by rsyslogd.
 rsyslogd pass the logs to a local /var/log/daemon.log and send logs with log
 level info or higher over TCP to the manager node's joint /var/log/daemon.log.
 See the rsyslogd config file under /etc/rsyslogd.conf for details on the
-rsyslogd setup on the paris, london, and manager nodes.
+rsyslogd setup on the paris1, paris2, and manager nodes.
 
 Further Reading
 ---------------

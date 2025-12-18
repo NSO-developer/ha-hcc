@@ -51,10 +51,14 @@ printf "\n${PURPLE}##### Start the SSH and rsyslog daemons\n${NC}"
 /usr/sbin/sshd
 /usr/sbin/rsyslogd
 
+# Since we are in a container, pretending to be a device
+printf "\n${PURPLE}##### Done initializing\n${NC}"
+touch ${NCS_RUN_DIR}/initialized
 while [ -f ${NCS_RUN_DIR}/upgrade ] ; do
      printf "${RED}#### Waiting for an upgrade to complete...\n${NC}"
      sleep 1
 done
+rm -f $NCS_RUN_DIR/initialized
 
 if [ "$(ls -A /home/admin/etc/package-store)" ]; then
     cp -r /home/admin/etc/package-store/* ${NCS_RUN_DIR}/packages/
@@ -64,10 +68,14 @@ else
     printf "${RED}#### Package store empty!\n${NC}"
 fi
 
-printf "\n${PURPLE}##### Start NSO\n${NC}"
-if [ -f ${NCS_RUN_DIR}/  ] ; then
+if [ -f ${NCS_RUN_DIR}/package_reload ] ; then
     printf "${PURPLE}#### Start NSO with package reload\n${NC}"
+    rm -f ${NCS_RUN_DIR}/package_reload
     runuser -m -u admin -g ncsadmin -- ${NCS_DIR}/bin/ncs --foreground -v --cd /home/admin --heart --with-package-reload -c ${NCS_CONFIG_DIR}/ncs.conf
+elif [ -f ${NCS_RUN_DIR}/package_reload_force ] ; then
+    printf "${PURPLE}#### Start NSO with forced package reload\n${NC}"
+    rm -f ${NCS_RUN_DIR}/package_reload_force
+    runuser -m -u admin -g ncsadmin -- ${NCS_DIR}/bin/ncs --foreground -v --cd /home/admin --heart --with-package-reload-force -c ${NCS_CONFIG_DIR}/ncs.conf
 else
     printf "${PURPLE}#### Start NSO without package reload\n${NC}"
     runuser -m -u admin -g ncsadmin -- ${NCS_DIR}/bin/ncs --foreground -v --cd /home/admin --heart -c ${NCS_CONFIG_DIR}/ncs.conf

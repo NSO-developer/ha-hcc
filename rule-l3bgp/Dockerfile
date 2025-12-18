@@ -12,8 +12,10 @@ RUN dnf --disableplugin subscription-manager install -y openssh-server wget net-
     && wget https://github.com/osrg/gobgp/releases/download/v2.25.0/gobgp_2.25.0_linux_amd64.tar.gz \
     && tar xzf gobgp_2.25.0_linux_amd64.tar.gz \
     && setcap 'cap_net_bind_service=+ep' /usr/bin/gobgpd \
-    && echo "nso ALL = (root) NOPASSWD"":"" /usr/sbin/ip" >> /etc/sudoers \
-    && echo "nso ALL = (root) NOPASSWD: /usr/sbin/arping" >> /etc/sudoers \
+    && echo "admin ALL = (root) NOPASSWD: /sbin/ip" >> /etc/sudoers \
+    && echo "admin ALL = (root) NOPASSWD: /usr/sbin/ip" >> /etc/sudoers \
+    && echo "admin ALL = (root) NOPASSWD: /opt/ncs/current/lib/ncs/bin/arping" >> /etc/sudoers \
+    && echo "admin ALL = (root) NOPASSWD: /bin/arping" >> /etc/sudoers \
     && mkdir -p /home/admin/.ssh \
     && sed -i.bak -e "s/#PasswordAuthentication yes/PasswordAuthentication no/" \
                   -e "s/PasswordAuthentication yes/PasswordAuthentication no/" \

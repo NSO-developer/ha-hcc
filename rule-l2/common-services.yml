@@ -4,6 +4,7 @@
       environment:
         - EXTRA_ARGS=--heart
         - ADMIN_USERNAME=admin
+        - HOME=/home/admin # The NSO installer will put the .erlang.cookie under $HOME/
       restart: "unless-stopped"
       build:
         context: .

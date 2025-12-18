@@ -2,8 +2,6 @@
 """A Python RESTCONF HA Raft failover example.
 
 Demo script
-(C) 2024 Tail-f Systems
-Permission to use this code as a starting point hereby granted
 
 See the README file for more information
 """
@@ -27,8 +25,7 @@ def on_node(host, cmd):
     ssh = paramiko.SSHClient()
     # Paramiko cannot handle multiple host keys host
     ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-    ssh.connect(host, port=2024, username="admin",
-    key_filename = os.path.join(os.path.expanduser('~'), ".ssh", "id_ed25519"))
+    ssh.connect(host, port=2024, username="admin", key_filename=os.path.join(os.path.expanduser('~'), ".ssh", "id_ed25519"))
     stdin, stdout, stderr = ssh.exec_command(cmd)
     output = stdout.read().decode('utf-8')
     err = stderr.read().decode('utf-8')
@@ -46,8 +43,7 @@ def on_node_sh(host, username, cmd):
     ssh = paramiko.SSHClient()
     # Paramiko cannot handle multiple host keys host
     ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-    ssh.connect(host, username=username,
-    key_filename=os.path.join(os.path.expanduser('~'), ".ssh", "id_ed25519"))
+    ssh.connect(host, username=username, key_filename=os.path.join(os.path.expanduser('~'), ".ssh", "id_ed25519"))
     try:
         _, stdout, stderr = ssh.exec_command(cmd, timeout=1)
         output = stdout.read().decode('utf-8')

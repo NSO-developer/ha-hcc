@@ -72,7 +72,7 @@ rm /root/ncs.crypto_keys
 printf "${PURPLE}##### Copy the HCC package(s) to the manager package-store and NSO node where HA raft is initialized\n${NC}"
 mkdir -p /root/package-store
 cp /root/manager-etc/ncs-*-tailf-hcc-*.tar.gz /root/package-store/
-cp /root/package-store/ncs-${HCC_NSO_VERSION}-tailf-hcc-${HCC_VERSION}.tar.gz /${NODE1}/package-store/
+cp /root/package-store/ncs-${HCC_NSO_VERSION}-tailf-hcc-${HCC_VERSION}.tar.gz /${NODE1}/package-store/tailf-hcc.tar.gz
 
 printf "${PURPLE}##### Create and build dummy and RESTCONF token store packages and copy to the NSO node where HA raft is initialized\n${NC}"
 set +u

@@ -32,7 +32,7 @@ printf "\n${GREEN}##### Current leader node: ${PURPLE}$CURRENT_LEADER\n${NC}"
 printf "\n${PURPLE}##### The ARP entry for the ${NSO_VIP} VIP address\n${NC}"
 arp -a
 
-printf "\n\n${GREEN}##### Upgrade the leader $CURRENT_LEADER packages and sync the packages to the followers\n${NC}"
+printf "\n${GREEN}##### Upgrade the leader $CURRENT_LEADER packages and sync the packages to the followers\n${NC}"
 cd /root/package-store
 ncs-make-package --service-skeleton template --dest dummy-1.1 \
                  --no-test --root-container dummies dummy
@@ -44,25 +44,27 @@ make -C dummy-1.1/src clean all
 tar cfz dummy-1.1.tar.gz dummy-1.1
 rm -rf dummy-1.1
 
-ncs-make-package --service-skeleton python-and-template --dest inert-1.0 --build --no-test --root-container inerts inert
+ncs-make-package --service-skeleton template --dest inert-1.0 --no-test --root-container inerts inert
+rm -rf inert-1.0/templates/*
 sed -i -e "s|uses ncs:service|//uses ncs:service|" inert-1.0/src/yang/inert.yang
 sed -i -e "s|ncs:servicepoint|//ncs:servicepoint|" inert-1.0/src/yang/inert.yang
+make -C inert-1.0/src clean all
 tar cfz inert-1.0.tar.gz inert-1.0
 rm -rf inert-1.0
 
 # Can use the container shared volumes here, but if no containers and shared volumes, for example, use scp
 scp_node "/root/package-store/dummy-1.1.tar.gz" "admin@$CURRENT_LEADER:/home/admin/etc/package-store/"
 scp_node "/root/package-store/inert-1.0.tar.gz" "admin@$CURRENT_LEADER:/home/admin/etc/package-store/"
-scp_node "/root/package-store/token-1.0.tar.gz" "admin@$CURRENT_LEADER:/home/admin/etc/package-store/"
-scp_node "/root/package-store/ncs-${NEW_HCC_NSO_VERSION}-tailf-hcc-${NEW_HCC_VERSION}.tar.gz" "admin@$CURRENT_LEADER:/home/admin/etc/package-store/tailf-hcc.tar.gz"
 
-on_leader_sh "rm -f $NCS_RUN_DIR/packages/* \
-              && cp /home/admin/etc/package-store/dummy-1.1.tar.gz $NCS_RUN_DIR/packages/ \
-              && cp /home/admin/etc/package-store/inert-1.0.tar.gz $NCS_RUN_DIR/packages/ \
-              && cp /home/admin/etc/package-store/token-1.0.tar.gz $NCS_RUN_DIR/packages/ \
-              && cp /home/admin/etc/package-store/tailf-hcc.tar.gz $NCS_RUN_DIR/packages/"
+on_leader "software packages list"
+on_leader "software packages fetch package-from-file /home/admin/etc/package-store/dummy-1.1.tar.gz"
+on_leader "software packages fetch package-from-file /home/admin/etc/package-store/inert-1.0.tar.gz"
+on_leader "software packages list"
+on_leader "software packages install package inert-1.0"
+on_leader "software packages install package dummy-1.1 replace-existing"
+on_leader "software packages list"
 
-on_leader "packages ha sync and-reload"
+on_leader "packages ha sync and-reload { wait-commit-queue-empty };software packages list"
 
 set +e
 until ping -c1 -w2 ${NSO_VIP} >/dev/null 2>&1 ; do

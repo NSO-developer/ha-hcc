@@ -18,6 +18,8 @@ services:
     networks:
       NSO-net:
         ipv4_address: ${NODE1_IP}
+    ports:
+      - "8888:8888"
     extends:
       file: common-services.yml
       service: NSO
@@ -37,6 +39,8 @@ services:
     networks:
       NSO-net:
         ipv4_address: ${NODE2_IP}
+    ports:
+      - "8889:8888"
     extends:
       file: common-services.yml
       service: NSO

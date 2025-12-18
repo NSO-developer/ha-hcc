@@ -174,7 +174,7 @@
         <enabled>true</enabled>
       </syslog>
     </developer-log>
-    <developer-log-level>info</developer-log-level>
+    <developer-log-level>trace</developer-log-level>
 
     <upgrade-log>
       <enabled>true</enabled>
@@ -354,6 +354,7 @@
     <server-name>${NSO_VIP}</server-name>
     <server-alias>${NODE1}</server-alias>
     <server-alias>${NODE2}</server-alias>
+    <server-alias>localhost</server-alias>
   </webui>
 
   <restconf>

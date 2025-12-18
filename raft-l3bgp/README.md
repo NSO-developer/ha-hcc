@@ -11,8 +11,8 @@ Guide for guidance.
 Example Network Overview
 ------------------------
 
-- manager: SSH client to manage the paris and london nodes, FRRouting Zebra + BGP
-         and nftables port forwarding + NAT
+- manager: SSH client to manage the paris and london nodes, FRRouting Zebra +
+           BGP and nftables port forwarding + NAT
 - paris:  NSO, Tail-f HCC package (uses GoBGP and iproute2 utils)
 - london: NSO, Tail-f HCC package (uses GoBGP and iproute2 utils)
 
@@ -41,7 +41,7 @@ Example Network Overview
 Prerequisites
 -------------
 
-- `NSO_VERSION` >= 6.5
+- `NSO_VERSION` >= 6.6
 - NSO production container: `cisco-nso-prod:${NSO_VERSION}`
 - `ncs-${HCC_NSO_VERSION}-tailf-hcc-${HCC_VERSION}.tar.gz`
 - Docker installed
@@ -94,8 +94,8 @@ Running the Example
 Implementation Details
 ----------------------
 
-This demo uses Docker containers to set up the Tail-f HCC NSO package in layer 3
-BGP mode with NSO and its dependencies as described in the NSO Administration
+This demo uses Docker containers to set up the Tail-f HCC NSO package in layer
+3 BGP mode with NSO and its dependencies as described in the NSO Administration
 Guide chapter "Tail-f HCC Package". The steps for the paris, berlin, and london
 nodes described by the documentation are implemented by the setup.sh,
 compose.yaml, common-services.yml, manager.Dockerfile, Dockerfile, and

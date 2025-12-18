@@ -11,9 +11,9 @@ Guide for guidance.
 Example Network Overview
 ------------------------
 
-- manager: SSH client to manage the paris and london nodes
-- paris:   NSO, Tail-f HCC package (uses arping and iproute2 utils)
-- london:  NSO, Tail-f HCC package (uses arping and iproute2 utils)
+- manager: SSH client to manage the paris nodes
+- paris1:  NSO, Tail-f HCC package (uses arping and iproute2 utils)
+- paris2:  NSO, Tail-f HCC package (uses arping and iproute2 utils)
 
       ----------  docker 0 default bridge  ----------
                               |
@@ -25,13 +25,13 @@ Example Network Overview
             |                 |                |
             | .98             | .2             | .99
       +----------+     +----------+     +----------+
-      | london   |     | manager  |     | paris    |
+      |  paris2  |     | manager  |     |  paris1  |
       +----------+     +----------+     +----------+
 
 Prerequisites
 -------------
 
-- `NSO_VERSION` >= 6.5
+- `NSO_VERSION` >= 6.6
 - NSO production container: `cisco-nso-prod:${NSO_VERSION}`
 - `ncs-${HCC_NSO_VERSION}-tailf-hcc-${HCC_VERSION}.tar.gz`
 - Docker installed
@@ -50,10 +50,10 @@ Running the Example
    This will start the manager and nodes running NSO using Docker Compose.
 3. Press a key to run a demo from the manager node.
 4. Press a key to follow the logs from the manager and NSO nodes. Hit ctrl-c.
-5. Connect to the london and paris shell to examine the Linux kernel route
+5. Connect to the paris1 and paris2 shell to examine the Linux kernel route
    status.
 
-        $ docker exec -it paris.fra bash
+        $ docker exec -it paris1.fra bash
         $ ip address show dev eth0
         $ arp -a
         $ exit
@@ -70,19 +70,19 @@ Implementation Details
 
 This demo uses Docker containers to set up the Tail-f HCC NSO package in layer 2
 mode with NSO and its dependencies as described in the NSO Administration Guide
-chapter "Tail-f HCC Package". The steps for the paris and london nodes
-described by the documentation are implemented by the setup.sh, compose.yaml, common-services.yml, manager.Dockerfile, Dockerfile, and
-demo_setup.sh files.
+chapter "Tail-f HCC Package". The steps for the paris  nodes described by the
+documentation are implemented by the setup.sh, compose.yaml,
+common-services.yml, manager.Dockerfile, Dockerfile, and demo_setup.sh files.
 
-The paris and london container nodes use the NSO production container while a
-simple manager container for Docker host access through the VIP address uses
+The paris container nodes use the NSO production container while a simple
+manager container for Docker host access through the VIP address uses
 a Debian distribution.
 
 Further Reading
 ---------------
 
 + NSO Administrator Guide: NSO rule-based HA & Tail-f HCC Package
-+ examples.ncs/development-guide/high-availability examples
++ examples.ncs/high-availability examples
 + https://github.com/ThomasHabets/arping
 + https://wiki.linuxfoundation.org/networking/iproute2
 + https://docs.docker.com/compose/

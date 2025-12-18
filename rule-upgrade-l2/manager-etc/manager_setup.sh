@@ -56,7 +56,7 @@ cd /root/package-store
 ncs-make-package --service-skeleton template \
                     --dest dummy-1.0 \
                     --no-test --root-container dummies dummy
-rm -rf dummy-1.0/templates/* ;
+rm -rf dummy-1.0/templates/*
 cp /root/manager-etc/yang/dummy.yang dummy-1.0/src/yang/dummy.yang
 make -C dummy-1.0/src clean all
 tar cfz dummy-1.0.tar.gz dummy-1.0

@@ -22,5 +22,7 @@ RUN dnf --disableplugin subscription-manager install -y openssh-server net-tools
                   /etc/rsyslog.conf \
     && echo 'daemon.info		@@manager' >> /etc/rsyslog.conf \
     && echo 'daemon.*			-/var/log/daemon.log' >> /etc/rsyslog.conf \
-    && echo "nso ALL = (root) NOPASSWD: /usr/sbin/ip" >> /etc/sudoers \
-    && echo "nso ALL = (root) NOPASSWD: /usr/sbin/arping" >> /etc/sudoers
+    && echo "admin ALL = (root) NOPASSWD: /sbin/ip" >> /etc/sudoers \
+    && echo "admin ALL = (root) NOPASSWD: /usr/sbin/ip" >> /etc/sudoers \
+    && echo "admin ALL = (root) NOPASSWD: /opt/ncs/current/lib/ncs/bin/arping" >> /etc/sudoers \
+    && echo "admin ALL = (root) NOPASSWD: /bin/arping" >> /etc/sudoers

@@ -6,9 +6,9 @@ GREEN='\033[0;32m'
 PURPLE='\033[0;35m'
 NC='\033[0m' # No Color
 
-NSO_VERSION="6.5.4"
-HCC_NSO_VERSION="6.5.4"
-HCC_VERSION="6.0.6"
+NSO_VERSION="6.6.2"
+HCC_NSO_VERSION="6.6"
+HCC_VERSION="6.0.7"
 
 NODE1=paris1.fra
 NODE2=paris2.fra
@@ -22,7 +22,7 @@ GATEWAY="192.168.23.1"
 printf "NODE1=$NODE1\nNODE2=$NODE2\nNSO_VERSION=$NSO_VERSION\n" > ./.env
 printf "NODE1_IP=$NODE1_IP\nNODE2_IP=$NODE2_IP\nNSO_VIP=$NSO_VIP\n" >> ./.env
 printf "MANAGER_IP=$MANAGER_IP\nSUBNET=$SUBNET\nGATEWAY=$GATEWAY\n" >> ./.env
-
+printf "NCS_CLI_SSH=true\nNCS_WEBUI_TRANSPORT_SSL=true\nNCS_NETCONF_TRANSPORT_SSH=true\n" >> ./.env
 
 if [ -f rule-etc/ncs-$HCC_NSO_VERSION-tailf-hcc-$HCC_VERSION.tar.gz ]
 then

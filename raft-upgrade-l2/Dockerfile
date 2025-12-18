@@ -1,4 +1,4 @@
-FROM redhat/ubi9:latest
+FROM redhat/ubi10:latest
 
 ARG NSO_ARCH
 ARG NSO_VERSION
@@ -51,8 +51,20 @@ RUN chown -Rh admin:ncsadmin ${NCS_CONFIG_DIR} ${NCS_RUN_DIR} \
     ${NCS_LOG_DIR} /home/admin \
     && chmod -R g=u ${NCS_CONFIG_DIR} ${NCS_RUN_DIR} ${NCS_LOG_DIR} \
     && chown admin:ncsadmin ${NCS_ROOT_DIR} \
-    && chown root ${NCS_ROOT_DIR}/ncs-${NSO_VERSION}/lib/ncs/lib/core/confd/priv/cmdwrapper \
-    && chmod u+s ${NCS_ROOT_DIR}/ncs-${NSO_VERSION}/lib/ncs/lib/core/confd/priv/cmdwrapper \
+    && set -eux; \
+       LEGACY_PRIV_1="${NCS_ROOT_DIR}/ncs-${NSO_VERSION}/lib/ncs/lib/core/confd/priv/cmdwrapper"; \
+       LEGACY_PRIV_2="${NCS_ROOT_DIR}/ncs-${NSO_VERSION}/netsim/confd/lib/confd/lib/core/confd/priv/cmdwrapper"; \
+       if [ -e "${LEGACY_PRIV_1}" ]; then \
+         CHOWN_PATH="${LEGACY_PRIV_1}"; \
+         CHMOD_PATH="${LEGACY_PRIV_2}"; \
+       else \
+         CONFD_DIR="$(ls -d "${NCS_ROOT_DIR}/ncs-${NSO_VERSION}"/lib/ncs/lib/confd-* | head -n1)"; \
+         CONFD_VERSION="${CONFD_DIR##*-}"; \
+         CHOWN_PATH="${NCS_ROOT_DIR}/ncs-${NSO_VERSION}/lib/ncs/lib/confd-${CONFD_VERSION}/priv/cmdwrapper"; \
+         CHMOD_PATH="${NCS_ROOT_DIR}/ncs-${NSO_VERSION}/netsim/confd/lib/confd/lib/confd-${CONFD_VERSION}/priv/cmdwrapper"; \
+       fi; \
+       chown root "${CHOWN_PATH}"; \
+       chmod u+s "${CHMOD_PATH}" \
     && chmod 750 /home/admin/.ssh \
     && chmod 640 /home/admin/.ssh/authorized_keys \
     && chown -R oper:ncsoper /home/oper \
