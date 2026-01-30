@@ -64,7 +64,8 @@ on_leader "software packages install package inert-1.0"
 on_leader "software packages install package dummy-1.1 replace-existing"
 on_leader "software packages list"
 
-on_leader "packages ha sync and-reload { wait-commit-queue-empty };software packages list"
+on_leader "packages ha sync and-reload { wait-commit-queue-empty }"
+on_leader "software packages list"
 
 set +e
 until ping -c1 -w2 ${NSO_VIP} >/dev/null 2>&1 ; do
