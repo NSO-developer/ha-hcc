@@ -23,6 +23,7 @@
                 && /usr/sbin/rsyslogd
                 && ncs-make-package --service-skeleton template --dest /nso/run/packages/dummy-1.0 --build --no-test --root-container dummies dummy
                 && mkdir -p /nso/etc /nso/run/cdb /nso/run/rollbacks /nso/run/scripts /nso/run/streams /nso/run/state /nso/run/packages
+                && sleep 6
                 && runuser -m -u nso -g nso -- /run-nso.sh'
       cap_add:
         - NET_ADMIN

@@ -76,8 +76,14 @@ printf "\n${PURPLE}##### Observe a failover by bringing down $PRIMARY (current p
 set +e
 on_primary_sh "/opt/ncs/current/bin/ncs --stop"
 
-printf "${PURPLE}##### The secondary will attempt to reconnect to the primary $RA times every $RI s (timeout after $TIMEOUT s)\n${NC}"
-printf "${PURPLE}##### Test the ${NSO_VIP} VIP route to the new primary\n${NC}"
+printf "\n${PURPLE}##### The secondary will attempt to reconnect to the primary $RA times every $RI s (timeout after $TIMEOUT s)\n${NC}"
+sleep $((TIMEOUT+1))
+on_node $NODE2 "show high-availability status mode"
+
+printf "\n${PURPLE}##### Try add additional config on the new primary $NODE2 while in read-only mode waiting for the new secondary $NODE1\n${NC}"
+on_node $NODE2 "config; dummies dummy d2-new dummy 2.1.3.4; commit"
+
+printf "\n${PURPLE}##### Test the ${NSO_VIP} VIP route to the new primary\n${NC}"
 counter=0
 until [ $counter -gt 1 ] ; do
     if ping -c 1 ${NSO_VIP} &> /dev/null ; then
@@ -88,18 +94,13 @@ until [ $counter -gt 1 ] ; do
 done
 set -e
 
-printf "\n${PURPLE}##### Get the new primary name\n${NC}"
+printf "\n${PURPLE}##### Get the new primary name using the VIP address\n${NC}"
 SECONDARY=$PRIMARY
 CURRENT_ID=$(on_primary "show high-availability status current-id")
 tmp="${CURRENT_ID##* }"
 PRIMARY="${tmp::-1}"
 
 printf "\n${GREEN}##### Current primary node: ${PURPLE}$PRIMARY\n${NC}"
-
-printf "\n${PURPLE}##### Try add additional config on the primary $PRIMARY while in read-only mode waiting for the secondary $SECONDARY\n${NC}"
-on_primary "config;
-dummies dummy d2-new dummy 2.1.3.4;
-commit"
 
 printf "\n${PURPLE}##### Wait for $SECONDARY to come back and follow the new primary $PRIMARY\n${NC}"
 set +e
