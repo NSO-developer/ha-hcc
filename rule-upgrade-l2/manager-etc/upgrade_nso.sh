@@ -73,11 +73,16 @@ printf "\n${PURPLE}##### Install NSO ${NEW_NSO_VERSION} on all nodes\n${NC}"
 for NODE in "${NODES[@]}" ; do
     as_root_sh $NODE "chmod u+x /tmp/nso-$NEW_NSO_VERSION.linux.$NSO_ARCH.installer.bin \
                       && /tmp/nso-$NEW_NSO_VERSION.linux.$NSO_ARCH.installer.bin --system-install --run-as-user admin --non-interactive \
-                      && LEGACY_PRIV_1=\"$NCS_ROOT_DIR/ncs-$NEW_NSO_VERSION/lib/ncs/lib/core/confd/priv/cmdwrapper\"; \
-                      LEGACY_PRIV_2=\"$NCS_ROOT_DIR/ncs-$NEW_NSO_VERSION/netsim/confd/lib/confd/lib/core/confd/priv/cmdwrapper\"; \
-                      if [ -e \"\$LEGACY_PRIV_1\" ]; then \
-                          CHOWN_PATH=\"\$LEGACY_PRIV_1\"; \
-                          CHMOD_PATH=\"\$LEGACY_PRIV_2\"; \
+                      && NSO_CMDWRAPPER=\"$NCS_ROOT_DIR/ncs-$NEW_NSO_VERSION/bin/cmdwrapper\"; \
+                      NETSIM_CMDWRAPPER=\"$NCS_ROOT_DIR/ncs-$NEW_NSO_VERSION/netsim/confd/bin/cmdwrapper\"; \
+                      LEGACY_NSO_CMDWRAPPER=\"$NCS_ROOT_DIR/ncs-$NEW_NSO_VERSION/lib/ncs/lib/core/confd/priv/cmdwrapper\"; \
+                      LEGACY_NETSIM_CMDWRAPPER=\"$NCS_ROOT_DIR/ncs-$NEW_NSO_VERSION/netsim/confd/lib/confd/lib/core/confd/priv/cmdwrapper\"; \
+                      if [ -e \"\$NSO_CMDWRAPPER\" ]; then \
+                          CHOWN_PATH=\"\$NSO_CMDWRAPPER\"; \
+                          CHMOD_PATH=\"\$NETSIM_CMDWRAPPER\"; \
+                      elif [ -e \"\$LEGACY_NSO_CMDWRAPPER\" ]; then \
+                          CHOWN_PATH=\"\$LEGACY_NSO_CMDWRAPPER\"; \
+                          CHMOD_PATH=\"\$LEGACY_NETSIM_CMDWRAPPER\"; \
                       else \
                           CONFD_DIR=\$(ls -d \"$NCS_ROOT_DIR/ncs-$NEW_NSO_VERSION\"/lib/ncs/lib/confd-* | head -n1); \
                           CONFD_VERSION=\"\${CONFD_DIR##*-}\"; \

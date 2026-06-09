@@ -9,6 +9,8 @@ NC='\033[0m' # No Color
 
 printf "${GREEN}##### Node setup\n${NC}"
 chown -Rh admin:ncsadmin /home/admin/etc
+cp -r /home/admin/etc/dist ${NCS_CONFIG_DIR}
+
 cp /home/admin/etc/ncs.conf ${NCS_CONFIG_DIR}
 
 cat /home/admin/etc/ncs.crypto_keys > ${NCS_CONFIG_DIR}/ncs.crypto_keys
@@ -17,6 +19,10 @@ cp /home/admin/etc/ssh_host_ed25519_key* ${NCS_CONFIG_DIR}/ssh
 chmod 660 ${NCS_CONFIG_DIR}/ssh/ssh_host_ed25519_key.pub
 chmod 660 ${NCS_CONFIG_DIR}/ssh/ssh_host_ed25519_key
 chown -Rh admin:ncsadmin ${NCS_CONFIG_DIR}/ssh/ssh_host_ed25519_key*
+
+# Make the nodes HA private key accessible to the admin user
+chown -R admin:ncsadmin ${NCS_CONFIG_DIR}/dist/ssl/private
+chmod 700 ${NCS_CONFIG_DIR}/dist/ssl/private
 
 cat /home/admin/etc/authorized_keys >> /home/admin/.ssh/authorized_keys
 cat /home/admin/etc/authorized_keys >> /home/oper/.ssh/authorized_keys

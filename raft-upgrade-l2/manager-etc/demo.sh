@@ -9,9 +9,17 @@ NC='\033[0m' # No Color
 
 NODES=( ${NODE1} ${NODE2} ${NODE3} )
 
+function raft_host() {
+    local NODE="$1"
+    case "$NODE" in
+        *:[0-9]*) NODE="${NODE%:*}" ;;
+    esac
+    printf "%s" "$NODE"
+}
+
 function on_leader() { printf "${PURPLE}On leader CLI: ${NC}$@\n"; ssh -l admin -p 2024 -o LogLevel=ERROR ${NSO_VIP} "$@" ; }
 function on_leader_sh() { printf "${PURPLE}On leader: ${NC}$@\n"; ssh -l admin -p 22 -o ConnectTimeout=1 -o ConnectionAttempts=1 -o ServerAliveInterval=1 -o ServerAliveCountMax=1 -o LogLevel=ERROR ${NSO_VIP} "$@" ; }
-function on_node() { printf "${PURPLE}On $1 CLI: ${NC}$2\n"; ssh -l admin -p 2024 -o LogLevel=ERROR "$1" "$2" ; }
+function on_node() { printf "${PURPLE}On $1 CLI: ${NC}$2\n"; ssh -l admin -p 2024 -o LogLevel=ERROR "$(raft_host "$1")" "$2" ; }
 
 printf "\n${PURPLE}##### Initialize the HA cluster using the create-cluster action\n${NC}"
 on_node ${NODE1} "ha-raft create-cluster member [ ${NODE2} ${NODE3} ]"
@@ -47,7 +55,7 @@ on_leader "config; dummies dummy d1 dummy 1.2.3.4; commit; end; show running-con
 
 printf "\n${PURPLE}##### Check the dummy config on follower nodes\n${NC}"
 for NODE in "${NODES[@]}" ; do
-    if [ "$NODE" != "$CURRENT_LEADER" ] ; then
+    if [ "$NODE" != "$(raft_host "$CURRENT_LEADER")" ] ; then
         on_node $NODE "show running-config dummies"
     fi
 done
@@ -80,7 +88,7 @@ on_leader "config; dummies dummy d2-new dummy 2.1.3.4; commit; end; show running
 
 printf "\n${PURPLE}Show that the new config is replicated to all remaining nodes\n${NC}"
 for NODE in "${NODES[@]}" ; do
-    if [ "$NODE" != "$PREV_LEADER" ] ; then
+    if [ "$NODE" != "$(raft_host "$PREV_LEADER")" ] ; then
         on_node $NODE "show running-config dummies"
     fi
 done

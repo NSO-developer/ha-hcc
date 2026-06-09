@@ -84,24 +84,24 @@ generate_host_certs()
     # umask removes group/other read/write access from private key
     ( set -x; umask 077 && \
           openssl req -newkey ec -pkeyopt ec_paramgen_curve:secp384r1 \
-                  -keyout "/$1/dist/ssl/private/node.key" -nodes \
+                  -keyout "/$1/etc/dist/ssl/private/node.key" -nodes \
                   -out "/ssl/csr/$1.csr" -subj "/CN=$1" ) && \
         ( set -x; openssl x509 -req -CAcreateserial \
                           -in "/ssl/csr/$1.csr" \
                           -CA "/ssl/certs/ca.crt" \
                           -CAkey "/ssl/private/ca.key" \
                           -extfile "/ssl/csr/$1.san" \
-                          -days 3652 -out "/$1/dist/ssl/certs/node.crt" )
+                          -days 3652 -out "/$1/etc/dist/ssl/certs/node.crt" )
 
     if [ $? -ne 0 ]; then
         echo "$scrptname: error: failed to generate host certs/keys for $1" >&2
         exit 1
     fi
-    cp /ssl/certs/ca.crt "/$1/dist/ssl/certs/ca.crt"
-    chmod 644 "/$1/dist/ssl/certs/ca.crt" \
-              "/$1/dist/ssl/certs/node.crt"
-    chmod 600 "/$1/dist/ssl/private/node.key"
-    openssl x509 -noout -text -in "/$1/dist/ssl/certs/node.crt"
+    cp /ssl/certs/ca.crt "/$1/etc/dist/ssl/certs/ca.crt"
+    chmod 644 "/$1/etc/dist/ssl/certs/ca.crt" \
+              "/$1/etc/dist/ssl/certs/node.crt"
+    chmod 600 "/$1/etc/dist/ssl/private/node.key"
+    openssl x509 -noout -text -in "/$1/etc/dist/ssl/certs/node.crt"
 }
 
 generate_tls_certificates()
@@ -113,14 +113,13 @@ generate_tls_certificates()
 
     printf "${GREEN}##### Generate host certs/keys for ${NODE1} ${NODE2}\n${NC}"
     for NODE in "${NODES[@]}" ; do
-        mkdir -p "/$NODE/dist/ssl/certs" \
-                 "/$NODE/dist/ssl/private" \
-                 "/$NODE/dist/ssl/crls"
-        chmod 755 "/$NODE/dist/ssl" \
-                  "/$NODE/dist/ssl/certs" \
-                  "/$NODE/dist/ssl/crls"
-        chmod 700 "/$NODE/dist/ssl/private"
+        mkdir -p "/$NODE/etc/dist/ssl/certs" \
+                 "/$NODE/etc/dist/ssl/private" \
+                 "/$NODE/etc/dist/ssl/crls"
+        chmod 755 "/$NODE/etc/dist/ssl" \
+                  "/$NODE/etc/dist/ssl/certs" \
+                  "/$NODE/etc/dist/ssl/crls"
+        chmod 700 "/$NODE/etc/dist/ssl/private"
         generate_host_certs "$NODE"
     done
-    rm -rf /ssl
 }

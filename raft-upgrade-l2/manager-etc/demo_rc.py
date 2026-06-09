@@ -18,6 +18,13 @@ from socket import timeout as SocketTimeout
 from socket import error as SocketError
 
 
+def raft_host(host):
+    node, sep, port = host.rpartition(':')
+    if sep and port.isdigit():
+        return node
+    return host
+
+
 def on_node(host, cmd):
     okblue = '\033[94m'
     endc = '\033[0m'
@@ -25,7 +32,7 @@ def on_node(host, cmd):
     ssh = paramiko.SSHClient()
     # Paramiko cannot handle multiple host keys host
     ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-    ssh.connect(host, port=2024, username="admin", key_filename=os.path.join(os.path.expanduser('~'), ".ssh", "id_ed25519"))
+    ssh.connect(raft_host(host), port=2024, username="admin", key_filename=os.path.join(os.path.expanduser('~'), ".ssh", "id_ed25519"))
     stdin, stdout, stderr = ssh.exec_command(cmd)
     output = stdout.read().decode('utf-8')
     err = stderr.read().decode('utf-8')
@@ -43,7 +50,7 @@ def on_node_sh(host, username, cmd):
     ssh = paramiko.SSHClient()
     # Paramiko cannot handle multiple host keys host
     ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-    ssh.connect(host, username=username, key_filename=os.path.join(os.path.expanduser('~'), ".ssh", "id_ed25519"))
+    ssh.connect(raft_host(host), username=username, key_filename=os.path.join(os.path.expanduser('~'), ".ssh", "id_ed25519"))
     try:
         _, stdout, stderr = ssh.exec_command(cmd, timeout=1)
         output = stdout.read().decode('utf-8')
@@ -180,8 +187,8 @@ def ha_demo():
     print("Status code: {}\n".format(r.status_code), flush=True)
 
     print(f"{okblue}##### Show that the new config is replicated to all remaining nodes\n{endc}", flush=True)
-    prev_leader_url = f'https://{prev_leader}:8888/restconf'
-    curr_leader_url = f'https://{current_leader}:8888/restconf'
+    prev_leader_url = f'https://{raft_host(prev_leader)}:8888/restconf'
+    curr_leader_url = f'https://{raft_host(current_leader)}:8888/restconf'
     for node_url in node_urls:
         if node_url != curr_leader_url and node_url != prev_leader_url:
             path = '/data/dummy:dummies'

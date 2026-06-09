@@ -19,6 +19,10 @@
                 && chmod 755 /nso/.ssh
                 && cp /nso/authorized_keys /nso/.ssh/
                 && chmod 644 /nso/.ssh/authorized_keys
+                && cp -r /nso/etc/dist /etc/ncs/
+                && chmod 755 /etc/ncs/dist /etc/ncs/dist/ssl /etc/ncs/dist/ssl/certs /etc/ncs/dist/ssl/crls
+                && chmod 644 /etc/ncs/dist/ssl/certs/ca.crt /etc/ncs/dist/ssl/certs/node.crt
+                && chmod 700 /etc/ncs/dist/ssl/private
                 && /usr/sbin/sshd
                 && /usr/sbin/rsyslogd
                 && ncs-make-package --service-skeleton template --dest /nso/run/packages/dummy-1.0 --build --no-test --root-container dummies dummy

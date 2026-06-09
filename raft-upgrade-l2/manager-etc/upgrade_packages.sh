@@ -7,10 +7,18 @@ GREEN='\033[0;32m'
 PURPLE='\033[0;35m'
 NC='\033[0m' # No Color
 
+function raft_host() {
+    local NODE="$1"
+    case "$NODE" in
+        *:[0-9]*) NODE="${NODE%:*}" ;;
+    esac
+    printf "%s" "$NODE"
+}
+
 function on_leader() { printf "${PURPLE}On leader CLI: ${NC}$@\n"; ssh -l admin -p 2024 -o LogLevel=ERROR ${NSO_VIP} "$@" ; }
 function on_leader_sh() { printf "${PURPLE}On leader: ${NC}$@\n"; ssh -l admin -p 22 -o LogLevel=ERROR ${NSO_VIP} "$@" ; }
-function on_node() { printf "${PURPLE}On $1 CLI: ${NC}$2\n"; ssh -l admin -p 2024 -o LogLevel=ERROR "$1" "$2" ; }
-function on_node_sh() { printf "${PURPLE}On $1: ${NC}$2\n"; ssh -l admin -p 22 -o LogLevel=ERROR "$1" "$2" ; }
+function on_node() { printf "${PURPLE}On $1 CLI: ${NC}$2\n"; ssh -l admin -p 2024 -o LogLevel=ERROR "$(raft_host "$1")" "$2" ; }
+function on_node_sh() { printf "${PURPLE}On $1: ${NC}$2\n"; ssh -l admin -p 22 -o LogLevel=ERROR "$(raft_host "$1")" "$2" ; }
 function scp_node() { printf "${PURPLE}scp from: $1 to: $2${NC}\n"; scp -o LogLevel=ERROR "$1" "$2" ; }
 
 NODES=( ${NODE1} ${NODE2} ${NODE3} )
@@ -27,6 +35,7 @@ done
 LOCAL_NODE=$(on_leader "show ha-raft status local-node")
 tmp="${LOCAL_NODE##* }"
 CURRENT_LEADER="${tmp::-1}"
+CURRENT_LEADER_HOST=$(raft_host "$CURRENT_LEADER")
 printf "\n${GREEN}##### Current leader node: ${PURPLE}$CURRENT_LEADER\n${NC}"
 
 printf "\n${PURPLE}##### The ARP entry for the ${NSO_VIP} VIP address\n${NC}"
@@ -53,8 +62,8 @@ tar cfz inert-1.0.tar.gz inert-1.0
 rm -rf inert-1.0
 
 # Can use the container shared volumes here, but if no containers and shared volumes, for example, use scp
-scp_node "/root/package-store/dummy-1.1.tar.gz" "admin@$CURRENT_LEADER:/home/admin/etc/package-store/"
-scp_node "/root/package-store/inert-1.0.tar.gz" "admin@$CURRENT_LEADER:/home/admin/etc/package-store/"
+scp_node "/root/package-store/dummy-1.1.tar.gz" "admin@$CURRENT_LEADER_HOST:/home/admin/etc/package-store/"
+scp_node "/root/package-store/inert-1.0.tar.gz" "admin@$CURRENT_LEADER_HOST:/home/admin/etc/package-store/"
 
 on_leader "software packages list"
 on_leader "software packages fetch package-from-file /home/admin/etc/package-store/dummy-1.1.tar.gz"

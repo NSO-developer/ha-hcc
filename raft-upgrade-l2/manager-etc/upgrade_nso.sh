@@ -7,10 +7,18 @@ GREEN='\033[0;32m'
 PURPLE='\033[0;35m'
 NC='\033[0m' # No Color
 
+function raft_host() {
+    local NODE="$1"
+    case "$NODE" in
+        *:[0-9]*) NODE="${NODE%:*}" ;;
+    esac
+    printf "%s" "$NODE"
+}
+
 function on_leader() { printf "${PURPLE}On leader CLI: ${NC}$@\n"; ssh -l admin -p 2024 -o LogLevel=ERROR ${NSO_VIP} "$@" ; }
-function on_node() { printf "${PURPLE}On $1 CLI: ${NC}$2\n"; ssh -l admin -p 2024 -o LogLevel=ERROR "$1" "$2" ; }
-function on_node_sh() { printf "${PURPLE}On $1: ${NC}$2\n"; ssh -l admin -p 22 -o LogLevel=ERROR "$1" "$2" ; }
-function as_root_sh() { printf "${PURPLE}On $1: ${NC}$2\n"; ssh -i /root/.ssh/upgrade-keys/id_ed25519 -l root -p 22 -o LogLevel=ERROR "$1" "$2" ; }
+function on_node() { printf "${PURPLE}On $1 CLI: ${NC}$2\n"; ssh -l admin -p 2024 -o LogLevel=ERROR "$(raft_host "$1")" "$2" ; }
+function on_node_sh() { printf "${PURPLE}On $1: ${NC}$2\n"; ssh -l admin -p 22 -o LogLevel=ERROR "$(raft_host "$1")" "$2" ; }
+function as_root_sh() { printf "${PURPLE}On $1: ${NC}$2\n"; ssh -i /root/.ssh/upgrade-keys/id_ed25519 -l root -p 22 -o LogLevel=ERROR "$(raft_host "$1")" "$2" ; }
 function scp_node() { printf "${PURPLE}scp from: $1 to: $2${NC}\n"; scp -o LogLevel=ERROR "$1" "$2" ; }
 
 NODES=( ${NODE1} ${NODE2} ${NODE3} )
@@ -120,11 +128,16 @@ for NODE in "${NODES[@]}" ; do
     set -e
     as_root_sh "$NODE" "/tmp/nso-${NEW_NSO_VERSION}.linux.${NSO_ARCH}.installer.bin \
         --system-install --run-as-user admin --non-interactive && \
-        LEGACY_PRIV_1=\"$NCS_ROOT_DIR/ncs-$NEW_NSO_VERSION/lib/ncs/lib/core/confd/priv/cmdwrapper\"; \
-        LEGACY_PRIV_2=\"$NCS_ROOT_DIR/ncs-$NEW_NSO_VERSION/netsim/confd/lib/confd/lib/core/confd/priv/cmdwrapper\"; \
-        if [ -e \"\$LEGACY_PRIV_1\" ]; then \
-            CHOWN_PATH=\"\$LEGACY_PRIV_1\"; \
-            CHMOD_PATH=\"\$LEGACY_PRIV_2\"; \
+        NSO_CMDWRAPPER=\"$NCS_ROOT_DIR/ncs-$NEW_NSO_VERSION/bin/cmdwrapper\"; \
+        NETSIM_CMDWRAPPER=\"$NCS_ROOT_DIR/ncs-$NEW_NSO_VERSION/netsim/confd/bin/cmdwrapper\"; \
+        LEGACY_NSO_CMDWRAPPER=\"$NCS_ROOT_DIR/ncs-$NEW_NSO_VERSION/lib/ncs/lib/core/confd/priv/cmdwrapper\"; \
+        LEGACY_NETSIM_CMDWRAPPER=\"$NCS_ROOT_DIR/ncs-$NEW_NSO_VERSION/netsim/confd/lib/confd/lib/core/confd/priv/cmdwrapper\"; \
+        if [ -e \"\$NSO_CMDWRAPPER\" ]; then \
+            CHOWN_PATH=\"\$NSO_CMDWRAPPER\"; \
+            CHMOD_PATH=\"\$NETSIM_CMDWRAPPER\"; \
+        elif [ -e \"\$LEGACY_NSO_CMDWRAPPER\" ]; then \
+            CHOWN_PATH=\"\$LEGACY_NSO_CMDWRAPPER\"; \
+            CHMOD_PATH=\"\$LEGACY_NETSIM_CMDWRAPPER\"; \
         else \
             CONFD_DIR=\$(ls -d \"$NCS_ROOT_DIR/ncs-$NEW_NSO_VERSION\"/lib/ncs/lib/confd-* | head -n1); \
             CONFD_VERSION=\"\${CONFD_DIR##*-}\"; \

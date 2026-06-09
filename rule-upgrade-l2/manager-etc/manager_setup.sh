@@ -13,6 +13,10 @@ printf "${GREEN}##### Manager setup\n${NC}"
 printf "\n${PURPLE}##### Start the rsyslog daemon\n${NC}"
 /usr/sbin/rsyslogd
 
+. /root/manager-etc/gen_tls_certs.sh
+printf "${GREEN}##### Generate TLS certificates\n${NC}"
+generate_tls_certificates
+
 printf "\n${PURPLE}##### Generate the ncs.crypto_keys file\n${NC}"
 AES128=$(openssl rand -hex 16)
 AES256=$(openssl rand -hex 32)
@@ -92,4 +96,3 @@ done
 rm /root/ncs.crypto_keys
 
 printf "${GREEN}##### Manager setup done!\n${NC}"
-
