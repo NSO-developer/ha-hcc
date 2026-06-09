@@ -105,14 +105,19 @@ generate_host_certs()
 generate_tls_certificates()
 {
     mkdir -p /ssl/certs /ssl/crl /ssl/private /ssl/csr
-    chmod 600 /ssl/private
+    chmod 700 /ssl/private
 
     generate_self_signed_ca
 
     printf "${GREEN}##### Generate host certs/keys for ${NODE1} ${NODE2} ${NODE3}\n${NC}"
     for NODE in "${NODES[@]}" ; do
-        mkdir -p /$NODE/etc/dist/ssl/certs /$NODE/etc/dist/ssl/private
-        chmod 600 /$NODE/etc/dist/ssl/private
+        mkdir -p /$NODE/etc/dist/ssl/certs \
+                 /$NODE/etc/dist/ssl/private \
+                 /$NODE/etc/dist/ssl/crls
+        chmod 755 /$NODE/etc/dist/ssl \
+                  /$NODE/etc/dist/ssl/certs \
+                  /$NODE/etc/dist/ssl/crls
+        chmod 700 /$NODE/etc/dist/ssl/private
         generate_host_certs "$NODE"
     done
 }

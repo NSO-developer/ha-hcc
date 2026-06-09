@@ -464,6 +464,7 @@
       <ca-cert-file>${NCS_CONFIG_DIR}/dist/ssl/certs/ca.crt</ca-cert-file>
       <cert-file>${NCS_CONFIG_DIR}/dist/ssl/certs/NODE_NAME.crt</cert-file>
       <key-file>${NCS_CONFIG_DIR}/dist/ssl/private/NODE_NAME.key</key-file>
+      <crl-dir>${NCS_CONFIG_DIR}/dist/ssl/crls/</crl-dir>
     </ssl>
   </ha-raft>
 </ncs-config>

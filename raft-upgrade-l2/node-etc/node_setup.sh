@@ -23,6 +23,10 @@ chmod 660 ${NCS_CONFIG_DIR}/ssh/ssh_host_ed25519_key
 chown -Rh admin:ncsadmin ${NCS_CONFIG_DIR}/ssh/ssh_host_ed25519_key*
 
 # Make the nodes HA private key accessible to the admin user
+chmod 755 ${NCS_CONFIG_DIR}/dist \
+          ${NCS_CONFIG_DIR}/dist/ssl \
+          ${NCS_CONFIG_DIR}/dist/ssl/certs \
+          ${NCS_CONFIG_DIR}/dist/ssl/crls
 chown -R admin:ncsadmin ${NCS_CONFIG_DIR}/dist/ssl/private
 chmod 700 ${NCS_CONFIG_DIR}/dist/ssl/private
 
