@@ -31,7 +31,7 @@ Example Network Overview
 Prerequisites
 -------------
 
-- `NSO_VERSION` >= 6.6
+- `NSO_VERSION` >= 6.7
 - NSO production container: `cisco-nso-prod:${NSO_VERSION}`
 - `ncs-${HCC_NSO_VERSION}-tailf-hcc-${HCC_VERSION}.tar.gz`
 - Docker installed
