@@ -36,7 +36,7 @@ Example Network Overview
 Prerequisites
 -------------
 
-- `NSO_VERSION` >= 6.5
+- `NSO_VERSION` >= 6.7
 - `nso-${NSO_VERSION}.linux.${NSO_ARCH}.installer.bin` and
   `nso-${NEW_NSO_VERSION}.linux.${NSO_ARCH}.installer.bin`, e.g. for NSO 6.5.2
   and 6.5.3
