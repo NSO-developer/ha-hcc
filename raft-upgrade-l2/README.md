@@ -15,7 +15,7 @@ Example Network Overview
 
 - manager: management station with CLI, RESTCONF, and SSH access to the paris
   nodes.
-- paris1:   NSO, Tail-f HCC package (uses arping and iproute2 utils)
+- paris1:  NSO, Tail-f HCC package (uses arping and iproute2 utils)
 - paris2:  NSO, Tail-f HCC package (uses arping and iproute2 utils)
 - paris3:  NSO, Tail-f HCC package (uses arping and iproute2 utils)
 
@@ -38,19 +38,19 @@ Prerequisites
 
 - `NSO_VERSION` >= 6.7
 - `nso-${NSO_VERSION}.linux.${NSO_ARCH}.installer.bin` and
-  `nso-${NEW_NSO_VERSION}.linux.${NSO_ARCH}.installer.bin`, e.g. for NSO 6.5.2
-  and 6.5.3
+  `nso-${NEW_NSO_VERSION}.linux.${NSO_ARCH}.installer.bin`, e.g. for NSO 6.7
+  and 6.7.1
 - `ncs-${HCC_NSO_VERSION}-tailf-hcc-${HCC_VERSION}.tar.gz` and
-  `ncs-${NEW_HCC_NSO_VERSION}-tailf-hcc-${NEW_HCC_VERSION}.tar.gz`, e.g 6.5 and
-  6.5.4 (could be the same version). Example:
+  `ncs-${NEW_HCC_NSO_VERSION}-tailf-hcc-${NEW_HCC_VERSION}.tar.gz`, e.g 6.7 and
+  6.7.1 (could be the same version). Example:
 
       $ pwd
       /Users/tailf/raft-upgrade-l2
       $ ls -1 n*
-      ncs-6.5.3-tailf-hcc-6.0.6.tar.gz
-      ncs-6.5.4-tailf-hcc-6.0.6.tar.gz
-      nso-6.5.3.linux.x86_64.installer.bin
-      nso-6.5.4.linux.x86_64.installer.bin
+      ncs-6.7-tailf-hcc-6.0.8.tar.gz
+      ncs-6.7.1-tailf-hcc-6.0.8.tar.gz
+      nso-6.7.linux.x86_64.installer.bin
+      nso-6.7.1.linux.x86_64.installer.bin
 
 - Docker installed
 
